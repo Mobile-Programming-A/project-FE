@@ -2,14 +2,21 @@
   "expo": {
     "name": "RunningApp",
     "slug": "RunningApp",
+    "owner": "changsu12",
+    "scheme": "RunningApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "runningapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.changsu12.RunningApp",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "러닝 경로 추적을 위해 위치 권한이 필요합니다.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "러닝 경로 추적을 위해 위치 권한이 필요합니다.",
+        "NMFClientId": "v84tk10tlm"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +26,17 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.changsu12.RunningApp",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDummy"
+        }
+      }
     },
     "web": {
       "output": "static",
@@ -38,11 +55,24 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "러닝 경로 추적을 위해 위치 권한이 필요합니다."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6723d4f3-9a8d-4f0f-aa5f-df88e94bacc9"
+      }
     }
   }
 }

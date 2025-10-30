@@ -1,0 +1,735 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Dimensions,
+  Modal,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import TabScreenLayout from '../components/TabScreenLayout';
+
+const { width, height } = Dimensions.get('window');
+
+export default function RunningScreen() {
+  // 러닝 상태: 'ready', 'running', 'paused', 'completed'
+  const [runningState, setRunningState] = useState('ready');
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+
+  // 지도 및 위치
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [region, setRegion] = useState({
+    latitude: 37.5665,
+    longitude: 126.9780,
+    latitudeDelta: 0.005,
+    longitudeDelta: 0.005,
+  });
+  const mapRef = useRef(null);
+
+  // 러닝 데이터
+  const [distance, setDistance] = useState(0); // km
+  const [pace, setPace] = useState(0); // 초/km
+  const [time, setTime] = useState(0); // 초
+  const [pathCoords, setPathCoords] = useState([]);
+  const [lastLocation, setLastLocation] = useState(null);
+
+  // 위치 구독
+  const locationSubscription = useRef(null);
+
+  // 위치 권한 요청 및 초기 위치 가져오기
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('권한 필요', 'GPS 위치 권한이 필요합니다.');
+        return;
+      }
+
+      try {
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+
+        const coords = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        };
+
+        setCurrentLocation(coords);
+        setRegion({
+          ...coords,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        });
+        setLastLocation(coords);
+      } catch (error) {
+        console.error('위치 가져오기 실패:', error);
+        Alert.alert('오류', '현재 위치를 가져올 수 없습니다.');
+      }
+    })();
+  }, []);
+
+  // 러닝 시작 시 위치 추적 시작
+  useEffect(() => {
+    if (runningState === 'running') {
+      startLocationTracking();
+    } else {
+      stopLocationTracking();
+    }
+
+    return () => {
+      stopLocationTracking();
+    };
+  }, [runningState]);
+
+  // 위치 추적 시작
+  const startLocationTracking = async () => {
+    try {
+      locationSubscription.current = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.BestForNavigation,
+          timeInterval: 1000, // 1초마다 업데이트
+          distanceInterval: 5, // 5미터 이동 시 업데이트
+        },
+        (location) => {
+          const newCoords = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          };
+
+          setCurrentLocation(newCoords);
+
+          // 경로에 추가
+          setPathCoords(prev => [...prev, newCoords]);
+
+          // 거리 계산
+          if (lastLocation) {
+            const dist = calculateDistance(
+              lastLocation.latitude,
+              lastLocation.longitude,
+              newCoords.latitude,
+              newCoords.longitude
+            );
+            setDistance(prev => prev + dist);
+          }
+
+          setLastLocation(newCoords);
+
+          // 지도 중심 이동
+          if (mapRef.current) {
+            mapRef.current.animateCamera({
+              center: newCoords,
+              zoom: 17,
+            });
+          }
+        }
+      );
+    } catch (error) {
+      console.error('위치 추적 시작 실패:', error);
+    }
+  };
+
+  // 위치 추적 중지
+  const stopLocationTracking = () => {
+    if (locationSubscription.current) {
+      locationSubscription.current.remove();
+      locationSubscription.current = null;
+    }
+  };
+
+  // 두 지점 간 거리 계산 (Haversine formula) - km 단위
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // 지구 반지름 (km)
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const toRad = (value) => {
+    return (value * Math.PI) / 180;
+  };
+
+  // 타이머
+  useEffect(() => {
+    let interval;
+    if (runningState === 'running') {
+      interval = setInterval(() => {
+        setTime(prev => {
+          const newTime = prev + 1;
+          // 페이스 계산 (초/km) - 최소 거리 0.01km 이상일 때만 계산
+          if (distance >= 0.01) {
+            const calculatedPace = newTime / distance;
+            // 합리적인 페이스 범위: 3분/km ~ 20분/km (180초 ~ 1200초)
+            setPace(Math.min(Math.max(calculatedPace, 180), 1200));
+          } else {
+            setPace(0);
+          }
+          return newTime;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [runningState, distance]);
+
+  // 시간 포맷 (00:00)
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // 페이스 포맷 (0'00")
+  const formatPace = (secondsPerKm) => {
+    if (secondsPerKm === 0 || !isFinite(secondsPerKm)) return "0'00\"";
+    const mins = Math.floor(secondsPerKm / 60);
+    const secs = Math.floor(secondsPerKm % 60);
+    return `${mins}'${secs.toString().padStart(2, '0')}"`;
+  };
+
+  const handleStart = () => {
+    setRunningState('running');
+    // 경로 초기화
+    if (currentLocation) {
+      setPathCoords([currentLocation]);
+    }
+  };
+
+  const handlePause = () => {
+    setRunningState('paused');
+  };
+
+  const handleResume = () => {
+    setRunningState('running');
+  };
+
+  const handleStop = () => {
+    setRunningState('completed');
+    setShowCompletionModal(true);
+  };
+
+  const handleSave = () => {
+    setShowCompletionModal(false);
+    // 저장 로직 - 나중에 구현
+    // 초기화
+    setTime(0);
+    setDistance(0);
+    setPace(0);
+    setPathCoords([]);
+    setRunningState('ready');
+  };
+
+  const centerOnUser = () => {
+    if (currentLocation && mapRef.current) {
+      mapRef.current.animateToRegion({
+        ...currentLocation,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      }, 500);
+    }
+  };
+
+  const zoomIn = () => {
+    if (mapRef.current) {
+      mapRef.current.animateCamera({ zoom: 18 }, { duration: 300 });
+    }
+  };
+
+  const zoomOut = () => {
+    if (mapRef.current) {
+      mapRef.current.animateCamera({ zoom: 14 }, { duration: 300 });
+    }
+  };
+
+  return (
+    <TabScreenLayout>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+
+        {/* 헤더 */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>러닝</Text>
+            <Text style={styles.headerSubtitle}>
+              {new Date().toLocaleDateString('ko-KR', {
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short'
+              })}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.menuButton}>
+            <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
+
+        {/* 구글 지도 */}
+        <View style={styles.mapContainer}>
+          {currentLocation ? (
+            <MapView
+              ref={mapRef}
+              style={styles.map}
+              provider={PROVIDER_GOOGLE}
+              initialRegion={region}
+              showsUserLocation={true}
+              showsMyLocationButton={false}
+              followsUserLocation={runningState === 'running'}
+              showsCompass={false}
+              showsScale={false}
+              toolbarEnabled={false}
+            >
+              {/* 러닝 경로 표시 */}
+              {pathCoords.length > 1 && (
+                <Polyline
+                  coordinates={pathCoords}
+                  strokeColor="#FF6B6B"
+                  strokeWidth={4}
+                />
+              )}
+
+              {/* 시작점 마커 */}
+              {pathCoords.length > 0 && (
+                <Marker
+                  coordinate={pathCoords[0]}
+                  title="시작"
+                >
+                  <View style={styles.startMarker}>
+                    <Ionicons name="flag" size={20} color="#FFF" />
+                  </View>
+                </Marker>
+              )}
+            </MapView>
+          ) : (
+            <View style={styles.mapPlaceholder}>
+              <Text style={styles.mapPlaceholderText}>지도 로딩 중...</Text>
+            </View>
+          )}
+
+          {/* 지도 컨트롤 버튼들 */}
+          <View style={styles.mapControls}>
+            <TouchableOpacity style={styles.mapControlButton} onPress={zoomIn}>
+              <Ionicons name="add" size={24} color="#666" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.mapControlButton} onPress={zoomOut}>
+              <Ionicons name="remove" size={24} color="#666" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.mapControlButton} onPress={centerOnUser}>
+              <Ionicons name="locate" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+
+
+        {/* 러닝 정보 카드 */}
+        <View style={styles.infoCard}>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>거리</Text>
+              <Text style={styles.statValue}>{distance.toFixed(2)} km</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>페이스</Text>
+              <Text style={styles.statValue}>{formatPace(pace)} /km</Text>
+            </View>
+          </View>
+
+          <View style={styles.timeContainer}>
+            <Text style={styles.timeLabel}>시간</Text>
+            <Text style={styles.timeValue}>{formatTime(time)}</Text>
+          </View>
+
+          {/* 진행 바 */}
+          {runningState !== 'ready' && (
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${Math.min((distance / 5) * 100, 100)}%` }
+                ]}
+              />
+            </View>
+          )}
+
+          {/* 컨트롤 버튼들 */}
+          <View style={styles.controlButtons}>
+            {runningState === 'ready' && (
+              <>
+                <TouchableOpacity
+                  style={styles.startButton}
+                  onPress={handleStart}
+                >
+                  <Ionicons name="play" size={32} color="#FFF" />
+                </TouchableOpacity>
+                <Text style={styles.startText}>시작 버튼을 눌러 러닝을 시작하세요</Text>
+              </>
+            )}
+
+            {(runningState === 'running' || runningState === 'paused') && (
+              <View style={styles.runningControls}>
+                <TouchableOpacity
+                  style={styles.stopButton}
+                  onPress={handleStop}
+                >
+                  <View style={styles.stopIcon} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.pauseButton}
+                  onPress={runningState === 'running' ? handlePause : handleResume}
+                >
+                  <Ionicons
+                    name={runningState === 'running' ? 'pause' : 'play'}
+                    size={32}
+                    color="#FFF"
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.bookmarkButton}>
+                  <Ionicons name="bookmark" size={28} color="#FFF" />
+                </TouchableOpacity>
+
+                <Text style={styles.runningStatusText}>
+                  {runningState === 'running' ? '러닝 중' : '일시정지'}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* 완료 모달 */}
+        <Modal
+          visible={showCompletionModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowCompletionModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalIcon}>
+                <Ionicons name="flag" size={40} color="#6B7FFF" />
+              </View>
+
+              <Text style={styles.modalTitle}>러닝기록 저장됨!</Text>
+
+              <View style={styles.modalStats}>
+                <View style={styles.modalStatRow}>
+                  <Text style={styles.modalStatLabel}>거리</Text>
+                  <Text style={styles.modalStatValue}>{distance.toFixed(2)} km</Text>
+                </View>
+                <View style={styles.modalStatRow}>
+                  <Text style={styles.modalStatLabel}>시간</Text>
+                  <Text style={styles.modalStatValue}>{formatTime(time)}</Text>
+                </View>
+                <View style={styles.modalStatRow}>
+                  <Text style={styles.modalStatLabel}>페이스</Text>
+                  <Text style={styles.modalStatValue}>{formatPace(pace)} /km</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={handleSave}
+              >
+                <Text style={styles.confirmButtonText}>확인</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </TabScreenLayout>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFF',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFF',
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  menuButton: {
+    padding: 4,
+  },
+  mapContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+  },
+  mapPlaceholder: {
+    flex: 1,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapPlaceholderText: {
+    fontSize: 16,
+    color: '#999',
+  },
+  mapControls: {
+    position: 'absolute',
+    right: 16,
+    top: 20,
+    gap: 8,
+  },
+  mapControlButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  startMarker: {
+    width: 36,
+    height: 36,
+    backgroundColor: '#4CAF50',
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFF',
+  },
+  gpsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginHorizontal: 20,
+    marginTop: -30,
+    borderRadius: 20,
+    zIndex: 10,
+    gap: 8,
+  },
+  gpsText: {
+    color: '#FFF',
+    fontSize: 12,
+    flex: 1,
+  },
+  infoCard: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#999',
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+  },
+  timeContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  timeLabel: {
+    fontSize: 14,
+    color: '#999',
+    marginBottom: 4,
+  },
+  timeValue: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#333',
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 2,
+    marginBottom: 24,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FF6B6B',
+  },
+  controlButtons: {
+    alignItems: 'center',
+  },
+  startButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#7FD89A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: '#7FD89A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  startText: {
+    fontSize: 14,
+    color: '#999',
+  },
+  runningControls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 20,
+    width: '100%',
+  },
+  stopButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#DC6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stopIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#FFF',
+    borderRadius: 4,
+  },
+  pauseButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#2D2D2D',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bookmarkButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#6B7FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  runningStatusText: {
+    position: 'absolute',
+    bottom: -30,
+    fontSize: 14,
+    color: '#999',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: width * 0.8,
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F0F2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 24,
+  },
+  modalStats: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  modalStatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalStatLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  modalStatValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  confirmButton: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#6B7FFF',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+});

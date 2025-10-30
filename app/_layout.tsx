@@ -1,24 +1,25 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { useEffect, useState } from 'react';
+import SplashScreen from '../screens/SplashScreen';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // 앱 초기화 로직 (폰트 로딩, 데이터 로딩 등)
+    setTimeout(() => {
+      setIsReady(true);
+    }, 2000); // 2초 후 스플래시 화면 종료
+  }, []);
+
+  if (!isReady) {
+    return <SplashScreen />;
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(tabs)" />
+    </Stack>
   );
 }
