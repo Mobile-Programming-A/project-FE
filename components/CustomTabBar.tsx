@@ -20,10 +20,19 @@ export default function CustomTabBar() {
     <View style={styles.bottomNav}>
       <TouchableOpacity
         style={styles.navItem}
-        onPress={() => router.push('/(tabs)/main')}
+        onPress={() => router.push('/(tabs)/friends')}
       >
-        <View style={[styles.navIcon, isActive('main') && styles.activeNavIcon]}>
+        <View style={[styles.navIcon, isActive('friends') && styles.activeNavIcon]}>
           <Text style={styles.navEmoji}>😊</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => router.push('/(tabs)/history')}
+      >
+        <View style={[styles.navIcon, isActive('history') && styles.activeNavIcon]}>
+          <Text style={styles.navEmoji}>📅</Text>
         </View>
       </TouchableOpacity>
 
@@ -32,15 +41,6 @@ export default function CustomTabBar() {
         onPress={() => router.push('/(tabs)/community')}
       >
         <View style={[styles.navIcon, isActive('community') && styles.activeNavIcon]}>
-          <Text style={styles.navEmoji}>📅</Text>
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => router.push('/(tabs)/friends')}
-      >
-        <View style={[styles.navIcon, isActive('friends') && styles.activeNavIcon]}>
           <Text style={styles.navEmoji}>👤</Text>
         </View>
       </TouchableOpacity>
