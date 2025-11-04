@@ -12,7 +12,7 @@ export default function TabLayout() {
       }}
     >
       {/* 여기에 정의된 4개만 탭으로 보입니다. */}
-      <Tabs.Screen name="main" options={{ title: '메인' }} />
+      <Tabs.Screen name="History" options={{ title: '기록' }} />
       <Tabs.Screen name="running" options={{ title: '러닝' }} />
       <Tabs.Screen name="community" options={{ title: '커뮤니티' }} />
       <Tabs.Screen name="friends" options={{ title: '친구' }} />
