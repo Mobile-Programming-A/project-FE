@@ -16,6 +16,13 @@ export default function TabLayout() {
       <Tabs.Screen name="running" options={{ title: '러닝' }} />
       <Tabs.Screen name="community" options={{ title: '커뮤니티' }} />
       <Tabs.Screen name="friends" options={{ title: '친구' }} />
-    </Tabs>
+      <Tabs.Screen 
+        name="Character-custom" 
+        options={{ 
+          title: '캐릭터 커스텀',
+          href: null // 탭 바에서 숨김
+        }} 
+      />
+      </Tabs>
   );
 }

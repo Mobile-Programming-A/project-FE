@@ -12,10 +12,12 @@ import {
     View,
 } from 'react-native';
 import TabScreenLayout from '../components/TabScreenLayout';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
 export default function ExerciseScreen() {
+    const router = useRouter();
     return (
         <TabScreenLayout>
             <SafeAreaView style={styles.container}>
@@ -28,13 +30,16 @@ export default function ExerciseScreen() {
                 >
                     {/* Header with Profile */}
                     <View style={styles.header}>
-                        <View style={styles.profileContainer}>
+                        <TouchableOpacity 
+                            style={styles.profileContainer}
+                            onPress={() => router.push('/Character-custom')}
+                        >
                             <Image
                                 source={{ uri: 'https://via.placeholder.com/40' }}
                                 style={styles.profileImage}
                             />
                             <Text style={styles.profileName}>망키</Text>
-                        </View>
+                        </TouchableOpacity>
                         <View style={styles.chatBubble} />
                     </View>
 
