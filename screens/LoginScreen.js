@@ -1,7 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
+    Alert,
     Dimensions,
     Image,
     StyleSheet,
@@ -10,10 +15,82 @@ import {
     View
 } from 'react-native';
 
+WebBrowser.maybeCompleteAuthSession();
+
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
     const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Google 인증 요청 - iOS와 웹 클라이언트 ID 설정
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        iosClientId: '656771928173-okuho4n8ugjk5h1hc9lnh2oi9g4j0dih.apps.googleusercontent.com',
+        webClientId: '656771928173-3tdf4229ete02t5rkvtv7tgmu8coh0k7.apps.googleusercontent.com',
+    });
+
+    // 인증 응답 처리
+    useEffect(() => {
+        console.log('🔍 OAuth Response:', JSON.stringify(response, null, 2));
+
+        if (response?.type === 'success') {
+            console.log('✅ 로그인 성공!');
+            const { authentication } = response;
+            handleGoogleLoginSuccess(authentication);
+        } else if (response?.type === 'error') {
+            console.error('❌ 로그인 오류:', response.error);
+            Alert.alert('로그인 실패', `구글 로그인 중 오류가 발생했습니다.\n${response.error?.message || ''}`);
+            setIsLoading(false);
+        } else if (response?.type === 'dismiss' || response?.type === 'cancel') {
+            console.log('⚠️ 로그인 취소됨');
+            setIsLoading(false);
+        }
+    }, [response]);
+
+    // 구글 로그인 성공 처리
+    const handleGoogleLoginSuccess = async (authentication) => {
+        try {
+            // 사용자 정보 가져오기
+            const userInfoResponse = await fetch(
+                'https://www.googleapis.com/oauth2/v2/userinfo',
+                {
+                    headers: { Authorization: `Bearer ${authentication.accessToken}` },
+                }
+            );
+
+            const userInfo = await userInfoResponse.json();
+            console.log('사용자 정보:', userInfo);
+
+            // 로그인 성공 - 메인 화면으로 이동
+            Alert.alert(
+                '로그인 성공',
+                `환영합니다, ${userInfo.name}님!`,
+                [
+                    {
+                        text: '확인',
+                        onPress: () => router.replace('/(tabs)/main')
+                    }
+                ]
+            );
+        } catch (error) {
+            console.error('사용자 정보 가져오기 실패:', error);
+            Alert.alert('오류', '사용자 정보를 가져오는데 실패했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // 구글 로그인 버튼 클릭
+    const handleGoogleLogin = async () => {
+        setIsLoading(true);
+        try {
+            await promptAsync();
+        } catch (error) {
+            console.error('구글 로그인 오류:', error);
+            Alert.alert('오류', '구글 로그인을 시작할 수 없습니다.');
+            setIsLoading(false);
+        }
+    };
 
     const handleStartPress = () => {
         console.log('시작하기 버튼 클릭! 메인 화면으로 이동합니다.');
@@ -38,11 +115,35 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.bottomContainer}>
+                {/* 구글 로그인 버튼 */}
+                <TouchableOpacity
+                    style={styles.googleButton}
+                    onPress={handleGoogleLogin}
+                    disabled={!request || isLoading}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator color="#4285F4" />
+                    ) : (
+                        <>
+                            <Ionicons name="logo-google" size={24} color="#4285F4" />
+                            <Text style={styles.googleButtonText}>Google로 로그인</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+
+                {/* 또는 구분선 */}
+                <View style={styles.dividerContainer}>
+                    <View style={styles.divider} />
+                    <Text style={styles.dividerText}>또는</Text>
+                    <View style={styles.divider} />
+                </View>
+
+                {/* 시작하기 버튼 */}
                 <TouchableOpacity
                     style={styles.kakaoButton}
                     onPress={handleStartPress}
                 >
-                    <Text style={styles.kakaoButtonText}>시작하기</Text>
+                    <Text style={styles.kakaoButtonText}>로그인 없이 시작하기</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -87,6 +188,42 @@ const styles = StyleSheet.create({
         paddingTop: 40,
         alignItems: 'center',
         zIndex: 2,
+    },
+    googleButton: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 30,
+        width: '100%',
+        paddingVertical: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 12,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    googleButtonText: {
+        color: '#3C1E1E',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+        marginVertical: 20,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#CCCCCC',
+    },
+    dividerText: {
+        marginHorizontal: 16,
+        fontSize: 14,
+        color: '#666666',
     },
     kakaoButton: {
         backgroundColor: '#FFFFFF',
