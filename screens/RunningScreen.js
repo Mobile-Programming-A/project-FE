@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -18,6 +20,7 @@ import TabScreenLayout from '../components/TabScreenLayout';
 const { width, height } = Dimensions.get('window');
 
 export default function RunningScreen() {
+  const router = useRouter();
   // 러닝 상태: 'ready', 'running', 'paused', 'completed'
   const [runningState, setRunningState] = useState('ready');
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -38,6 +41,7 @@ export default function RunningScreen() {
   const [time, setTime] = useState(0); // 초
   const [pathCoords, setPathCoords] = useState([]);
   const [lastLocation, setLastLocation] = useState(null);
+  const [calories, setCalories] = useState(0);
 
   // 위치 구독
   const locationSubscription = useRef(null);
@@ -160,7 +164,7 @@ export default function RunningScreen() {
     return (value * Math.PI) / 180;
   };
 
-  // 타이머
+  // 타이머 및 칼로리 계산
   useEffect(() => {
     let interval;
     if (runningState === 'running') {
@@ -175,6 +179,10 @@ export default function RunningScreen() {
           } else {
             setPace(0);
           }
+
+          // 칼로리 계산 (간단한 공식: 70kg 기준, 거리 * 70)
+          setCalories(Math.round(distance * 70));
+
           return newTime;
         });
       }, 1000);
@@ -218,15 +226,75 @@ export default function RunningScreen() {
     setShowCompletionModal(true);
   };
 
-  const handleSave = () => {
-    setShowCompletionModal(false);
-    // 저장 로직 - 나중에 구현
-    // 초기화
-    setTime(0);
-    setDistance(0);
-    setPace(0);
-    setPathCoords([]);
-    setRunningState('ready');
+  // 러닝 기록 저장
+  const handleSave = async () => {
+    try {
+      // 기존 기록 불러오기
+      const existingRecordsJson = await AsyncStorage.getItem('runningRecords');
+      const existingRecords = existingRecordsJson ? JSON.parse(existingRecordsJson) : [];
+
+      // 시작 위치의 주소 가져오기 (역지오코딩)
+      let locationName = `RRC-${String(existingRecords.length + 1).padStart(3, '0')}`;
+      const startCoords = pathCoords[0] || currentLocation;
+
+      if (startCoords) {
+        try {
+          const addressResults = await Location.reverseGeocodeAsync({
+            latitude: startCoords.latitude,
+            longitude: startCoords.longitude,
+          });
+
+          if (addressResults && addressResults.length > 0) {
+            const address = addressResults[0];
+            // 도로명, 거리명, 구역 등을 조합하여 이름 생성
+            locationName = address.street || address.name || address.district || address.city || locationName;
+          }
+        } catch (geoError) {
+          console.error('주소 가져오기 실패:', geoError);
+          // 주소를 가져오지 못해도 기본 ID로 저장
+        }
+      }
+
+      // 새 기록 객체 생성
+      const newRecord = {
+        id: locationName,
+        date: new Date().toISOString(),
+        time: time,
+        distance: distance,
+        pace: pace,
+        calories: calories,
+        pathCoords: pathCoords,
+        startLocation: startCoords,
+      };
+
+      // 기록 추가 및 저장
+      const updatedRecords = [newRecord, ...existingRecords];
+      await AsyncStorage.setItem('runningRecords', JSON.stringify(updatedRecords));
+
+      setShowCompletionModal(false);
+
+      Alert.alert(
+        '저장 완료',
+        '러닝 기록이 저장되었습니다!',
+        [
+          {
+            text: '확인',
+            onPress: () => {
+              // 초기화
+              setTime(0);
+              setDistance(0);
+              setPace(0);
+              setCalories(0);
+              setPathCoords([]);
+              setRunningState('ready');
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('저장 실패:', error);
+      Alert.alert('오류', '기록 저장에 실패했습니다.');
+    }
   };
 
   const centerOnUser = () => {
@@ -258,7 +326,10 @@ export default function RunningScreen() {
 
         {/* 헤더 */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
@@ -271,8 +342,11 @@ export default function RunningScreen() {
               })}
             </Text>
           </View>
-          <TouchableOpacity style={styles.menuButton}>
-            <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => router.push('/history')}
+          >
+            <Ionicons name="time-outline" size={24} color="#333" />
           </TouchableOpacity>
         </View>
 
@@ -331,8 +405,6 @@ export default function RunningScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
-
 
         {/* 러닝 정보 카드 */}
         <View style={styles.infoCard}>
@@ -423,7 +495,7 @@ export default function RunningScreen() {
                 <Ionicons name="flag" size={40} color="#6B7FFF" />
               </View>
 
-              <Text style={styles.modalTitle}>러닝기록 저장됨!</Text>
+              <Text style={styles.modalTitle}>러닝 완료!</Text>
 
               <View style={styles.modalStats}>
                 <View style={styles.modalStatRow}>
@@ -438,13 +510,17 @@ export default function RunningScreen() {
                   <Text style={styles.modalStatLabel}>페이스</Text>
                   <Text style={styles.modalStatValue}>{formatPace(pace)} /km</Text>
                 </View>
+                <View style={styles.modalStatRow}>
+                  <Text style={styles.modalStatLabel}>칼로리</Text>
+                  <Text style={styles.modalStatValue}>{calories} kcal</Text>
+                </View>
               </View>
 
               <TouchableOpacity
                 style={styles.confirmButton}
                 onPress={handleSave}
               >
-                <Text style={styles.confirmButtonText}>확인</Text>
+                <Text style={styles.confirmButtonText}>저장하기</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -457,7 +533,7 @@ export default function RunningScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#D4E9D7',
   },
   header: {
     flexDirection: 'row',
@@ -465,7 +541,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: '#D4E9D7',
   },
   backButton: {
     padding: 4,
@@ -534,25 +610,8 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#FFF',
   },
-  gpsBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#333',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginHorizontal: 20,
-    marginTop: -30,
-    borderRadius: 20,
-    zIndex: 10,
-    gap: 8,
-  },
-  gpsText: {
-    color: '#FFF',
-    fontSize: 12,
-    flex: 1,
-  },
   infoCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#D4E9D7',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 24,
@@ -679,7 +738,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: width * 0.8,
-    backgroundColor: '#FFF',
+    backgroundColor: '#D4E9D7',
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
