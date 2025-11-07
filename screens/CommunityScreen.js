@@ -1,17 +1,22 @@
-import { StyleSheet, Text, View } from 'react-native';
-import TabScreenLayout from '../components/TabScreenLayout';
+import React from 'react';
+import { createStackNavigator } from '@react-navigation/stack';
+import CommunityMain from './community/CommunityMain';
+import TrendingShoes from './community/TrendingShoes';
+import RunningCourseRecommend from './community/RunningCourseRecommend';
+
+const Stack = createStackNavigator();
 
 export default function CommunityScreen() {
     return (
-        <TabScreenLayout>
-            <View style={styles.container}>
-                <Text style={styles.text}>커뮤니티 화면</Text>
-            </View>
-        </TabScreenLayout>
+        <Stack.Navigator
+            screenOptions={{
+                headerShown: false,
+                cardStyle: { backgroundColor: '#D4E9D7' },
+            }}
+        >
+            <Stack.Screen name="CommunityMain" component={CommunityMain} />
+            <Stack.Screen name="TrendingShoes" component={TrendingShoes} />
+            <Stack.Screen name="RunningCourseRecommend" component={RunningCourseRecommend} />
+        </Stack.Navigator>
     );
 }
-// (스타일 코드는 MainScreen과 동일하게 추가)
-const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#D4E9D7' },
-    text: { fontSize: 20 },
-});
