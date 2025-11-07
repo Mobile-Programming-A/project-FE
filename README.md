@@ -1,50 +1,92 @@
-# Welcome to your Expo app 👋
+# 🥭 망GO (ManGo) - GPS 기반 러닝 애플리케이션
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<div align="center">
+  <h3>🏃 러닝에 필요한 모든 것, 하나의 앱으로</h3>
+  <p>GPS 기반 러닝 기록, 음성 코칭, 캐릭터 육성, 커뮤니티를 통합한 <b>올인원 러닝 플랫폼</b></p>
+</div>
 
-## Get started
+## 📋 목차
+- [프로젝트 소개](#-프로젝트-소개)
+- [기술 스택](#-기술-스택)
+- [팀 구성](#-팀-구성)
+- [설치 및 실행](#-설치-및-실행)
+- [프로젝트 구조](#-프로젝트-구조)
 
-1. Install dependencies
+<br/>
 
-   ```bash
-   npm install
-   ```
+## 🎯 프로젝트 소개
+**망GO**는 단순한 러닝 기록 앱을 넘어, 러닝 기록, 음성 코치, 커뮤니티, 게임화 요소를 결합한 통합 러닝 플랫폼입니다.  
+러닝에 필요한 모든 활동을 하나의 앱에서 해결하여 사용자 편의성을 극대화하고, 캐릭터 육성과 커뮤니티 기능을 통해 지속적인 동기부여를 제공합니다.  
+데이터 기반 피드백과 음성 코칭으로 체계적인 러닝 습관을 형성하고, 러너들이 정보를 공유하며 함께 성장할 수 있는 중심적인 허브 역할을 지향합니다.
 
-2. Start the app
 
-   ```bash
-   npx expo start
-   ```
+<br/>
 
-In the output, you'll find options to open the app in a
+## 🛠 기술 스택
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Frontend
+![React Native](https://img.shields.io/badge/-React%20Native-61DAFB?style=flat&logo=react&logoColor=black)
+![Expo](https://img.shields.io/badge/-Expo-000020?style=flat&logo=expo&logoColor=white)
+![JavaScript](https://img.shields.io/badge/-JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)
+![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Backend
+(추후 추가 예정)
 
-## Get a fresh project
+### 지원 플랫폼
+- **Android**: 10.0 이상
+- **iOS**: 15.0 이상
 
-When you're ready, run:
+<br/>
+
+## 👥 팀 구성
+| <img src="https://avatars.githubusercontent.com/u/160497134?v=4" alt="김민서님 프로필 사진" width="150"> | <img src="https://avatars.githubusercontent.com/u/217433354?v=4" alt="임창수님 프로필 사진" width="150"> | <img src="https://avatars.githubusercontent.com/u/115949608?v=4" alt="최서정님 프로필 사진" width="150"> | <img src="https://avatars.githubusercontent.com/u/69253558?v=4" alt="민찬혁님 프로필 사진" width="150"> |
+|:---:|:---:|:---:|:---:|
+| [김민서](https://github.com/minseeeeo) | [임창수](https://github.com/mangokiwi02) | [최서정](https://github.com/hs-2171215-choiseojung) | [민찬혁](https://github.com/hs-2171245-chanhyukmin) |
+
+<br/>
+
+## 📦 설치 및 실행
+
+### 필수 요구사항
+- Node.js (v14 이상)
+- npm
+- Expo go (모바일 앱)
+
+### 설치 방법
 
 ```bash
-npm run reset-project
+# 저장소 클론
+git clone [repository-url]
+cd project-FE
+
+# 의존성 설치
+npm install
+
+# 개발 서버 실행
+npx expo start
+
+# 모바일 어플에서 실행
+# 안드로이드: expo go 앱에서 QR 스캔
+# 아이폰: 카메라로 QR 스캔
+```
+<br/>
+
+## 📁 프로젝트 구조
+
+```
+(프로젝트 종료 후 추가 예정)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+<br/>
 
-## Learn more
+## 📄 관련 문서
+(프로젝트 종료 후 관련 문서 추가 예정)
 
-To learn more about developing your project with Expo, look at the following resources:
+<br/>
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+<div align="center">
+  <p>Made with ❤️ by Team Mangkii</p>
+  <p>© 2025 ManGo Running Application. All rights reserved.</p>
+</div>
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
