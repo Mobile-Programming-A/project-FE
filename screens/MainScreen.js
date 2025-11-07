@@ -20,7 +20,7 @@ import TabScreenLayout from '../components/TabScreenLayout';
 
 const { width } = Dimensions.get('window');
 
-export default function ExerciseScreen() {
+export default function MainScreen() {
     const router = useRouter();
     const [totalDistance, setTotalDistance] = useState(0);
     const [totalTime, setTotalTime] = useState(0);
@@ -147,12 +147,12 @@ export default function ExerciseScreen() {
                     <View style={styles.header}>
                         <View style={styles.profileContainer}>
                             <Image
-                                source={{ uri: 'https://via.placeholder.com/40' }}
+                                source={require('../assets/mango_mypage.png')}
                                 style={styles.profileImage}
                             />
                             <Text style={styles.profileName}>망키</Text>
                         </View>
-                        <View style={styles.chatBubble} />
+
                     </View>
 
                     {/* 3D Character Area */}
