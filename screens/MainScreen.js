@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import TabScreenLayout from '../components/TabScreenLayout';
-import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
