@@ -38,7 +38,7 @@ export default function CommunityMain({ navigation }) {
                     {/* 지금 뜨는 러닝코스 */}
                     <TouchableOpacity
                         style={styles.menuItem}
-                        onPress={() => navigation.navigate('TrendingShoes')}
+                        onPress={() => navigation.navigate('firebaseTest')}
                     >
                         <View style={styles.iconContainer}>
                             <View style={[styles.iconCircle, { backgroundColor: '#FFE5E5' }]}>
