@@ -25,6 +25,7 @@ export default function LoginScreen() {
 
     // Google 인증 요청 - iOS와 웹 클라이언트 ID 설정
     const [request, response, promptAsync] = Google.useAuthRequest({
+        androidClientId: '656771928173-okuho4n8ugjk5h1hc9lnh2oi9g4j0dih.apps.googleusercontent.com',
         iosClientId: '656771928173-okuho4n8ugjk5h1hc9lnh2oi9g4j0dih.apps.googleusercontent.com',
         webClientId: '656771928173-3tdf4229ete02t5rkvtv7tgmu8coh0k7.apps.googleusercontent.com',
     });
