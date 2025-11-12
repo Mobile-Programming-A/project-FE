@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import TabScreenLayout from '../components/TabScreenLayout';
+import { characters, getCharacterById, getSelectedCharacterOrDefault, defaultCharacter } from '../data/characters';
 
 const { width } = Dimensions.get('window');
 
@@ -26,13 +27,31 @@ export default function ExerciseScreen() {
     const [totalTime, setTotalTime] = useState(0);
     const [lastRunDate, setLastRunDate] = useState(null);
     const [lastRunPath, setLastRunPath] = useState(null); // 최근 러닝 경로
+    const [selectedCharacter, setSelectedCharacter] = useState(null);
 
-    // 화면이 포커스될 때마다 기록 불러오기
+    // 화면이 포커스될 때마다 기록 및 캐릭터 불러오기
     useFocusEffect(
         useCallback(() => {
             loadRecords();
+            loadSelectedCharacter();
         }, [])
     );
+
+    // 저장된 캐릭터 불러오기
+    const loadSelectedCharacter = async () => {
+        try {
+            const savedCharacterId = await AsyncStorage.getItem('selectedCharacterId');
+            if (savedCharacterId) {
+                const character = getCharacterById(savedCharacterId);
+                setSelectedCharacter(character || characters[0]);
+            } else {
+                setSelectedCharacter(characters[0]); // 기본값
+            }
+        } catch (error) {
+            console.error('캐릭터 불러오기 실패:', error);
+            setSelectedCharacter(characters[0]); // 기본값
+        }
+    };
 
     // 기록 불러오기
     const loadRecords = async () => {
@@ -150,10 +169,10 @@ export default function ExerciseScreen() {
                             onPress={() => router.push('/Character-custom')}
                         >
                             <Image
-                                source={{ uri: 'https://via.placeholder.com/40' }}
+                                source={require('../assets/images/avatar1.png')}
                                 style={styles.profileImage}
                             />
-                            <Text style={styles.profileName}>망키</Text>
+                            <Text style={styles.profileName}>{selectedCharacter ? selectedCharacter.name : defaultCharacter.name}</Text>
                         </TouchableOpacity>
                         <View style={styles.chatBubble} />
                     </View>
@@ -161,7 +180,7 @@ export default function ExerciseScreen() {
                     {/* 3D Character Area */}
                     <View style={styles.characterContainer}>
                         <Image
-                            source={require('../assets/mangkee_character.png')}
+                            source={selectedCharacter ? selectedCharacter.image : defaultCharacter.image}
                             style={styles.character}
                         />
                     </View>

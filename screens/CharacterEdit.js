@@ -1,43 +1,61 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Image, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import TabScreenLayout from '../components/TabScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { characters, getCharacterById } from '../data/characters';
 
 export default function CharacterEditScreen() {
     const router = useRouter();
     const [selectedCharacter, setSelectedCharacter] = useState(null);
 
-    const characters = [
-        {
-            id: 1,
-            name: 'Budding Runner',
-            image: require('../assets/hairband_manki.png'),
-            level: 1,
-            description: '초보 러너'
-        },
-        {
-            id: 2,
-            name: 'Experined Runner',
-            image: require('../assets/medal_manki.png'),
-            level: 10,
-            description: '숙련된 러너'
-        },
-        {
-            id: 3,
-            name: 'Finisher Master',
-            image: require('../assets/cap_manki.png'),
-            level: 20,
-            description: '완주 마스터'
-        },
-        {
-            id: 4,
-            name: 'Master Runner',
-            image: require('../assets/sunglass_manki.png'),
-            level: 30,
-            description: '마스터 러너'
+    // 컴포넌트 마운트 시 저장된 캐릭터 불러오기
+    useEffect(() => {
+        loadSelectedCharacter();
+    }, []);
+
+    // 저장된 캐릭터 불러오기
+    const loadSelectedCharacter = async () => {
+        try {
+            const savedCharacterId = await AsyncStorage.getItem('selectedCharacterId');
+            if (savedCharacterId) {
+                const character = getCharacterById(savedCharacterId);
+                if (character) {
+                    setSelectedCharacter(character);
+                }
+            } else {
+                // 기본값으로 첫 번째 캐릭터 설정
+                setSelectedCharacter(characters[0]);
+            }
+        } catch (error) {
+            console.error('캐릭터 불러오기 실패:', error);
+            setSelectedCharacter(characters[0]);
         }
-    ];
+    };
+
+    // 캐릭터 저장 함수
+    const saveSelectedCharacter = async () => {
+        if (!selectedCharacter) {
+            Alert.alert('알림', '캐릭터를 선택해주세요.');
+            return;
+        }
+
+        try {
+            await AsyncStorage.setItem('selectedCharacterId', selectedCharacter.id.toString());
+            Alert.alert('성공', '캐릭터가 저장되었습니다!', [
+                {
+                    text: '확인',
+                    onPress: () => router.push('/(tabs)/Character-custom')
+                }
+            ]);
+        } catch (error) {
+            console.error('캐릭터 저장 실패:', error);
+            Alert.alert('오류', '캐릭터 저장에 실패했습니다.');
+        }
+    };
+
+
 
     return (
         <TabScreenLayout>
@@ -53,7 +71,7 @@ export default function CharacterEditScreen() {
                     <Text style={styles.title}>캐릭터 편집</Text>
                     <TouchableOpacity 
                         style={styles.saveButton}
-                        onPress={() => router.push('/(tabs)/Character-custom')}
+                        onPress={saveSelectedCharacter}
                     >
                         <Text style={styles.saveText}>저장</Text>
                     </TouchableOpacity>
