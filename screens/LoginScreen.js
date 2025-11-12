@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { LinearGradient } from 'expo-linear-gradient';
+
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -23,11 +24,14 @@ export default function LoginScreen() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
+    
     // Google 인증 요청 - iOS와 웹 클라이언트 ID 설정
-    const [request, response, promptAsync] = Google.useAuthRequest({
-        iosClientId: '656771928173-okuho4n8ugjk5h1hc9lnh2oi9g4j0dih.apps.googleusercontent.com',
-        webClientId: '656771928173-3tdf4229ete02t5rkvtv7tgmu8coh0k7.apps.googleusercontent.com',
-    });
+const [request, response, promptAsync] = Google.useAuthRequest({
+  iosClientId: "964488553495-7auqjtep0vdl52g2550l101tlms5ium7.apps.googleusercontent.com",
+  redirectUri: "https://auth.expo.io/@seojung024/RunningApp",
+  scopes: ["profile", "email"], // 추가하면 더 안정적
+});
+
 
     // 인증 응답 처리
     useEffect(() => {
