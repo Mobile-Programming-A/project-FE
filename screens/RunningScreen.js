@@ -328,7 +328,7 @@ export default function RunningScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => router.replace("/main")}
           >
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
