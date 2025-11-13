@@ -3,6 +3,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { defaultCharacter } from '../data/characters';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -25,6 +26,7 @@ export default function LoginScreen() {
 
     // Google 인증 요청 - iOS와 웹 클라이언트 ID 설정
     const [request, response, promptAsync] = Google.useAuthRequest({
+        androidClientId: '656771928173-okuho4n8ugjk5h1hc9lnh2oi9g4j0dih.apps.googleusercontent.com',
         iosClientId: '656771928173-okuho4n8ugjk5h1hc9lnh2oi9g4j0dih.apps.googleusercontent.com',
         webClientId: '656771928173-3tdf4229ete02t5rkvtv7tgmu8coh0k7.apps.googleusercontent.com',
     });
@@ -108,7 +110,7 @@ export default function LoginScreen() {
 
             <View style={styles.topContainer}>
                 <Image
-                    source={require('../assets/mangkee_character.png')}
+                    source={defaultCharacter.image}
                     style={styles.character}
                 />
                 <Text style={styles.subtitle}>망키와 함께 달려보세요!</Text>

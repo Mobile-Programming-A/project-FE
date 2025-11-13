@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import TabScreenLayout from '../components/TabScreenLayout';
+import { characters, defaultCharacter, getCharacterById } from '../data/characters';
 
 const { width } = Dimensions.get('window');
 
@@ -26,13 +27,31 @@ export default function MainScreen() {
     const [totalTime, setTotalTime] = useState(0);
     const [lastRunDate, setLastRunDate] = useState(null);
     const [lastRunPath, setLastRunPath] = useState(null); // 최근 러닝 경로
+    const [selectedCharacter, setSelectedCharacter] = useState(null);
 
-    // 화면이 포커스될 때마다 기록 불러오기
+    // 화면이 포커스될 때마다 기록 및 캐릭터 불러오기
     useFocusEffect(
         useCallback(() => {
             loadRecords();
+            loadSelectedCharacter();
         }, [])
     );
+
+    // 저장된 캐릭터 불러오기
+    const loadSelectedCharacter = async () => {
+        try {
+            const savedCharacterId = await AsyncStorage.getItem('selectedCharacterId');
+            if (savedCharacterId) {
+                const character = getCharacterById(savedCharacterId);
+                setSelectedCharacter(character || characters[0]);
+            } else {
+                setSelectedCharacter(characters[0]); // 기본값
+            }
+        } catch (error) {
+            console.error('캐릭터 불러오기 실패:', error);
+            setSelectedCharacter(characters[0]); // 기본값
+        }
+    };
 
     // 기록 불러오기
     const loadRecords = async () => {
@@ -145,20 +164,23 @@ export default function MainScreen() {
                 >
                     {/* Header with Profile */}
                     <View style={styles.header}>
-                        <View style={styles.profileContainer}>
+                        <TouchableOpacity
+                            style={styles.profileContainer}
+                            onPress={() => router.push('/Character-custom')}
+                        >
                             <Image
-                                source={require('../assets/mango_mypage.png')}
+                                source={require('../assets/images/avatar1.png')}
                                 style={styles.profileImage}
                             />
-                            <Text style={styles.profileName}>망키</Text>
-                        </View>
-
+                            <Text style={styles.profileName}>{selectedCharacter ? selectedCharacter.name : defaultCharacter.name}</Text>
+                        </TouchableOpacity>
+                        <View style={styles.chatBubble} />
                     </View>
 
                     {/* 3D Character Area */}
                     <View style={styles.characterContainer}>
                         <Image
-                            source={require('../assets/mangkee_character.png')}
+                            source={selectedCharacter ? selectedCharacter.image : defaultCharacter.image}
                             style={styles.character}
                         />
                     </View>
@@ -264,8 +286,8 @@ export default function MainScreen() {
                         )}
                     </TouchableOpacity>
                 </ScrollView>
-            </SafeAreaView>
-        </TabScreenLayout>
+            </SafeAreaView >
+        </TabScreenLayout >
     );
 }
 
