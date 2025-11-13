@@ -31,7 +31,8 @@
 ![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
 
 ### Backend
-(추후 추가 예정)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat&logo=firebase&logoColor=black)
+![Firestore](https://img.shields.io/badge/Firestore-F57C00?style=flat&logo=googlecloudfirestore&logoColor=white)
 
 ### 지원 플랫폼
 - **Android**: 10.0 이상
