@@ -1,11 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import TabScreenLayout from '../components/TabScreenLayout';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+import { characters, getCharacterById, defaultCharacter } from '../data/characters';
 
 export default function CharacterCustomScreen() {
     const router = useRouter();
+    const [selectedCharacter, setSelectedCharacter] = useState(null);
+    
+    // 경험치 데이터
+    const currentExp = 195;
+    const maxExp = 300;
+    const expPercentage = Math.round((currentExp / maxExp) * 100);
+
+
+
+    // 화면이 포커스될 때마다 선택된 캐릭터 불러오기
+    useFocusEffect(
+        React.useCallback(() => {
+            loadSelectedCharacter();
+        }, [])
+    );
+
+    // 저장된 캐릭터 불러오기
+    const loadSelectedCharacter = async () => {
+        try {
+            const savedCharacterId = await AsyncStorage.getItem('selectedCharacterId');
+            if (savedCharacterId) {
+                const character = getCharacterById(savedCharacterId);
+                setSelectedCharacter(character || characters[0]);
+            } else {
+                setSelectedCharacter(characters[0]); // 기본값
+            }
+        } catch (error) {
+            console.error('캐릭터 불러오기 실패:', error);
+            setSelectedCharacter(characters[0]); // 기본값
+        }
+    };
     
     return (
         <TabScreenLayout>
@@ -17,66 +51,80 @@ export default function CharacterCustomScreen() {
                     >
                         <Ionicons name="chevron-back" size={24} color="#333" />
                     </TouchableOpacity>
-                    <Text style={styles.title}>망키</Text>
-                    <TouchableOpacity 
-                        style={styles.editButton}
-                        onPress={() => router.push('/(tabs)/CharacterEdit')}
-                    >
-                        <Text style={styles.editButtonText}>편집</Text>
-                    </TouchableOpacity>
+                    <Text style={styles.title}>{selectedCharacter ? selectedCharacter.name : defaultCharacter.name}</Text>
+                    <View style={styles.placeholder} />
                 </View>
 
                 {/* 캐릭터 프리뷰 */}
                 <View style={styles.previewContainer}>
-                    <Image
-                        source={require('../assets/mangkee_character.png')}
-                        style={styles.characterImage}
-                    />
-                    <View style={styles.levelInfo}>
-                        <Text style={styles.levelText}>레벨 14</Text>
-                        <Text style={styles.expText}>650 / 1000 EXP</Text>
-                        <View style={styles.expBarContainer}>
-                            <View style={styles.expBarBackground}>
-                                <View style={[styles.expBarFill, { width: '65%' }]} />
-                            </View>
+                    <TouchableOpacity 
+                        style={styles.editLabel}
+                        onPress={() => router.push('/(tabs)/CharacterEdit')}
+                    >
+                        <Text style={styles.editLabelText}>편집</Text>
+                    </TouchableOpacity>
+                    <View style={styles.characterImageContainer}>
+                        <View style={styles.characterContainer}>
+                            <Image
+                                source={selectedCharacter ? selectedCharacter.image : defaultCharacter.image}
+                                style={styles.character}
+                            />
                         </View>
                     </View>
                 </View>
 
                 {/* 커스터마이징 옵션 */}
                 <View style={styles.customOptions}>
-                    <Text style={styles.sectionTitle}>다음 캐릭터까지의 미션</Text>
+                    {/* 캐릭터 정보 카드 */}
+                    <View style={styles.characterInfoCard}>
+                        <View style={styles.levelBadge}>
+                            <Text style={styles.levelBadgeText}>LV.5</Text>
+                        </View>
+                        <Text style={styles.characterName}>{selectedCharacter ? selectedCharacter.name : defaultCharacter.name}</Text>
+                        <View style={styles.levelBarContainer}>
+                            <Text style={styles.expText}>{currentExp} / {maxExp} EXP</Text>
+                            <View style={styles.levelBarBackground}>
+                                <View style={[styles.levelBarFill, { width: `${expPercentage}%` }]} />
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* 다음 레벨까지의 미션 */}
+                    <Text style={styles.sectionTitle}>다음 레벨까지의 미션</Text>
                     <View style={styles.missionList}>
-                        {/* 미션 아이템들 */}
                         <View style={styles.missionItem}>
-                            <View style={styles.missionIcon}>
-                                <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-                            </View>
-                            <View style={styles.missionInfo}>
-                                <Text style={styles.missionTitle}>2km 달리기 완주</Text>
-                                <View style={[styles.progressBar, { width: '100%' }]} />
-                            </View>
+                            <Ionicons name="fitness" size={20} color="#4CAF50" />
+                            <Text style={styles.missionText}>2km 달리기 완주</Text>
+                            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
                         </View>
 
                         <View style={styles.missionItem}>
-                            <View style={styles.missionIcon}>
-                                <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-                            </View>
-                            <View style={styles.missionInfo}>
-                                <Text style={styles.missionTitle}>친구 3명과 함께 달리기</Text>
-                                <View style={[styles.progressBar, { width: '100%' }]} />
-                            </View>
+                            <Ionicons name="time" size={20} color="#4CAF50" />
+                            <Text style={styles.missionText}>10분 달리기</Text>
+                            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
                         </View>
+                    </View>
 
-                        <View style={styles.missionItem}>
-                            <View style={styles.missionIcon}>
-                                <Ionicons name="checkmark-circle-outline" size={24} color="#999" />
+                    {/* 획득한 뱃지 */}
+                    <Text style={styles.sectionTitle}>획득한 뱃지</Text>
+                    <View style={styles.badgeContainer}>
+                        <View style={styles.badgeGrid}>
+                            <View style={[styles.badge, { backgroundColor: '#FFB74D' }]}>
+                                <Ionicons name="leaf" size={24} color="#FFF" />
                             </View>
-                            <View style={styles.missionInfo}>
-                                <Text style={styles.missionTitle}>특정한 젤리</Text>
-                                <View style={[styles.progressBar, { width: '30%' }]} />
+                            <View style={[styles.badge, { backgroundColor: '#81C784' }]}>
+                                <Ionicons name="trophy" size={24} color="#FFF" />
+                            </View>
+                            <View style={[styles.badge, { backgroundColor: '#64B5F6' }]}>
+                                <Ionicons name="checkmark" size={24} color="#FFF" />
+                            </View>
+                            <View style={[styles.badge, { backgroundColor: '#E57373' }]}>
+                                <Ionicons name="heart" size={24} color="#FFF" />
                             </View>
                         </View>
+                        <TouchableOpacity style={styles.closeButton}>
+                            <Ionicons name="close" size={20} color="#999" />
+                        </TouchableOpacity>
                     </View>
                 </View>
             </SafeAreaView>
@@ -104,18 +152,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center'
     },
-    editButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        backgroundColor: '#4CAF50',
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center'
-    },
-    editButtonText: {
-        fontSize: 14,
-        color: '#FFF',
-        fontWeight: '600'
+    placeholder: {
+        width: 40,
+        height: 40
     },
     title: {
         fontSize: 20,
@@ -126,48 +165,47 @@ const styles = StyleSheet.create({
     },
     previewContainer: {
         alignItems: 'center',
-        paddingVertical: 30
+        paddingVertical: 40,
+        position: 'relative'
     },
-    characterImage: {
+    editLabel: {
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        backgroundColor: '#333',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 15,
+        zIndex: 1
+    },
+    editLabelText: {
+        color: '#FFF',
+        fontSize: 12,
+        fontWeight: '600'
+    },
+    character: {
         width: 200,
         height: 200,
-        resizeMode: 'contain'
+        resizeMode: 'contain',
     },
-    levelInfo: {
-        marginTop: 15,
-        padding: 15,
-        backgroundColor: 'rgba(255,255,255,0.9)',
-        borderRadius: 20,
-        minWidth: 200,
+    characterImageContainer: {
+        width: 180,
+        height: 180,
+        justifyContent: 'center',
         alignItems: 'center'
     },
-    levelText: {
-        fontSize: 18,
-        color: '#333',
-        fontWeight: '700',
-        marginBottom: 5
-    },
-    expText: {
-        fontSize: 12,
-        color: '#666',
-        fontWeight: '500',
-        marginBottom: 8
-    },
-    expBarContainer: {
-        width: '100%',
-        alignItems: 'center'
-    },
-    expBarBackground: {
-        width: '100%',
-        height: 8,
-        backgroundColor: '#E0E0E0',
-        borderRadius: 4,
-        overflow: 'hidden'
-    },
-    expBarFill: {
-        height: '100%',
-        backgroundColor: '#4CAF50',
-        borderRadius: 4
+    characterPlaceholder: {
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4
     },
     customOptions: {
         flex: 1,
@@ -176,42 +214,113 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 30,
         padding: 20
     },
+    characterInfoCard: {
+        backgroundColor: '#FFF9C4',
+        borderRadius: 15,
+        padding: 20,
+        alignItems: 'center',
+        marginBottom: 25,
+        position: 'relative'
+    },
+    levelBadge: {
+        backgroundColor: '#FFB74D',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        marginBottom: 10
+    },
+    levelBadgeText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '600'
+    },
+    characterName: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#333',
+        marginBottom: 5
+    },
+    levelBarContainer: {
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 5
+    },
+    expText: {
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 8,
+        fontWeight: '500'
+    },
+    levelBarBackground: {
+        width: '80%',
+        height: 8,
+        backgroundColor: '#E0E0E0',
+        borderRadius: 4,
+        overflow: 'hidden'
+    },
+    levelBarFill: {
+        height: '100%',
+        backgroundColor: '#FFB74D',
+        borderRadius: 4
+    },
     sectionTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '600',
         color: '#333',
-        marginBottom: 20
+        marginBottom: 15
     },
     missionList: {
-        gap: 15
+        marginBottom: 25
     },
     missionItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F5F5F5',
+        backgroundColor: '#F8F8F8',
         padding: 15,
-        borderRadius: 12,
-        gap: 15
+        borderRadius: 10,
+        marginBottom: 10,
+        gap: 12
     },
-    missionIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+    missionText: {
+        flex: 1,
+        fontSize: 15,
+        color: '#333',
+        fontWeight: '500'
+    },
+    badgeContainer: {
+        position: 'relative'
+    },
+    badgeGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 10
+    },
+    badge: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4
+    },
+    closeButton: {
+        position: 'absolute',
+        top: -15,
+        right: -15,
+        width: 30,
+        height: 30,
+        borderRadius: 15,
         backgroundColor: '#FFF',
         justifyContent: 'center',
-        alignItems: 'center'
-    },
-    missionInfo: {
-        flex: 1
-    },
-    missionTitle: {
-        fontSize: 16,
-        color: '#333',
-        marginBottom: 8
-    },
-    progressBar: {
-        height: 4,
-        backgroundColor: '#4CAF50',
-        borderRadius: 2
+        alignItems: 'center',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2
     }
 });

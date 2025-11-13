@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useRouter } from 'expo-router';
+import { defaultCharacter } from '../data/characters';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -115,7 +116,7 @@ export default function LoginScreen() {
 
             <View style={styles.topContainer}>
                 <Image
-                    source={require('../assets/mangkee_character.png')}
+                    source={defaultCharacter.image}
                     style={styles.character}
                 />
                 <Text style={styles.subtitle}>망키와 함께 달려보세요!</Text>
