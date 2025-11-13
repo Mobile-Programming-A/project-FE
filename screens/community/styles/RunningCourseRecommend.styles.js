@@ -1,0 +1,467 @@
+import { StyleSheet } from "react-native";
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#D4E9D7",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "flex-start",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#333",
+  },
+  moreButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#333",
+  },
+  clearSearchButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  section: {
+    marginTop: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 6,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: "#999",
+    marginBottom: 16,
+  },
+  profileContainer: {
+    flexDirection: "row",
+    marginTop: 12,
+  },
+  profileItem: {
+    marginRight: 12,
+  },
+  registerCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#7AC943",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#E8F5E0",
+  },
+  registerLeftSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  registerContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  registerTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 4,
+  },
+  registerSubtitle: {
+    fontSize: 13,
+    color: "#777",
+    lineHeight: 18,
+  },
+  registerIconContainer: {
+    marginLeft: 12,
+  },
+  registerIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#E8F5E0",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#7AC943",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  profileCircleNew: {
+    borderColor: "#5B9A2F",
+    borderWidth: 4,
+    shadowColor: "#7AC943",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  profileEmoji: {
+    fontSize: 28,
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: "#666",
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: "#999",
+  },
+  resetSearchButton: {
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "#7AC943",
+    borderRadius: 8,
+  },
+  resetSearchText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  // 모달 스타일
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    width: "90%",
+    maxHeight: "85%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  inputHalf: {
+    width: "48%",
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: "#f9f9f9",
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: "top",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#f0f0f0",
+  },
+  cancelButtonText: {
+    color: "#666",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  submitButton: {
+    backgroundColor: "#7AC943",
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  // 지도 입력 스타일
+  mapInputContainer: {
+    marginBottom: 20,
+  },
+  mapInput: {
+    width: "100%",
+    height: 300,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  locationButtonsContainer: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  locationButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#7AC943",
+    backgroundColor: "#fff",
+  },
+  locationButtonActive: {
+    backgroundColor: "#7AC943",
+    borderColor: "#7AC943",
+  },
+  locationButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#7AC943",
+  },
+  locationButtonTextActive: {
+    color: "#fff",
+  },
+  addWaypointButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#4A90E2",
+    backgroundColor: "#fff",
+  },
+  addWaypointButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#4A90E2",
+  },
+  waypointsContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: "#F0F7FF",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#D0E4F7",
+  },
+  waypointsTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#4A90E2",
+    marginBottom: 8,
+  },
+  waypointItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#fff",
+    borderRadius: 6,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  waypointSelectButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+  },
+  waypointSelectButtonActive: {
+    backgroundColor: "#4A90E2",
+  },
+  waypointText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#4A90E2",
+  },
+  waypointTextActive: {
+    color: "#fff",
+  },
+  removeWaypointButton: {
+    padding: 4,
+  },
+  mapHint: {
+    fontSize: 13,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 8,
+    fontStyle: "italic",
+  },
+  loadingRouteContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  loadingRouteText: {
+    fontSize: 13,
+    color: "#7AC943",
+    fontWeight: "500",
+  },
+  // 코스 리스트 스타일
+  courseList: {
+    gap: 16,
+  },
+  courseCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  mapContainer: {
+    width: "100%",
+    height: 200,
+    backgroundColor: "#f0f0f0",
+  },
+  mapView: {
+    flex: 1,
+  },
+  mapPlaceholder: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
+  },
+  courseInfo: {
+    padding: 16,
+  },
+  courseName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 8,
+  },
+  courseStats: {
+    gap: 8,
+  },
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  statValue: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
+  },
+  courseDescription: {
+    fontSize: 14,
+    color: "#999",
+    lineHeight: 20,
+    marginTop: 4,
+  },
+});
+
+export default styles;

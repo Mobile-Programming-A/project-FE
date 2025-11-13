@@ -1,326 +1,714 @@
-import React from 'react';
+import React, { useState, useEffect } from "react";
 import {
-    StyleSheet,
-    Text,
-    View,
-    TouchableOpacity,
-    SafeAreaView,
-    StatusBar,
-    ScrollView,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import TabScreenLayout from '../../components/TabScreenLayout';
+  Text,
+  View,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+  Modal,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import MapView, { Marker, Polyline } from "react-native-maps";
+import { useFocusEffect } from "@react-navigation/native";
+import styles from "./styles/RunningCourseRecommend.styles";
+import { getAllCourses, addCourse } from "../../services/runningCourseService";
 
 export default function RunningCourseRecommend({ navigation }) {
-    // 샘플 프로필 이미지 (나중에 가능하다면 유저들로 대체 예정))
-    const profiles = [
-        { id: 1, emoji: '😊' },
-        { id: 2, emoji: '🦁' },
-        { id: 3, emoji: '🐶' },
-        { id: 4, emoji: '🐱' },
-    ];
+  const [courses, setCourses] = useState([]);
+  const [filteredCourses, setFilteredCourses] = useState([]);
+  const [searchText, setSearchText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [newCourse, setNewCourse] = useState({
+    name: "",
+    distance: "",
+    startLocation: null,
+    endLocation: null,
+    waypoints: [], // 경유지들
+    description: "",
+    routeCoordinates: [], // 실제 경로 좌표들
+  });
+  const [selectingLocation, setSelectingLocation] = useState(null); // 'start', 'end', or waypoint index
+  const [loadingRoute, setLoadingRoute] = useState(false);
 
-    // 샘플 러닝 코스 데이터
-    const courses = [
-        {
-            id: 1,
-            name: '다산로 36길',
-            date: '10/09 화',
-            time: '6:32 ~ 8:10',
-            calories: '328kcal',
-            distance: '8.41km',
-            steps: '30,270',
-        },
-        {
-            id: 2,
-            name: '퇴계로 2길 84',
-            date: '10/09 화',
-            time: '6:32 ~ 8:10',
-            calories: '328kcal',
-            distance: '8.41km',
-            steps: '30,270',
-        },
-    ];
+  // 기본 지도 중심 (서울)
+  const [mapRegion, setMapRegion] = useState({
+    latitude: 37.5665,
+    longitude: 126.978,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  });
 
-    return (
-        <TabScreenLayout>
-            <SafeAreaView style={styles.container}>
-                <StatusBar barStyle="dark-content" />
+  useEffect(() => {
+    loadCourses();
+  }, []);
 
-                {/* 헤더 */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Ionicons name="chevron-back" size={28} color="#333" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>러닝 코스 추천</Text>
-                    <TouchableOpacity style={styles.moreButton}>
-                        <Ionicons name="ellipsis-horizontal" size={28} color="#333" />
-                    </TouchableOpacity>
+  // 화면에 포커스될 때마다 코스 목록 새로고침
+  useFocusEffect(
+    React.useCallback(() => {
+      loadCourses();
+    }, [])
+  );
+
+  // 검색어 변경 시 필터링
+  useEffect(() => {
+    if (searchText.trim() !== "") {
+      const filtered = courses.filter(
+        (course) =>
+          course.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+          course.description
+            ?.toLowerCase()
+            .includes(searchText.toLowerCase()) ||
+          course.distance?.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setFilteredCourses(filtered);
+    } else {
+      setFilteredCourses(courses);
+    }
+  }, [searchText, courses]);
+
+  const loadCourses = async () => {
+    try {
+      setLoading(true);
+      const allCourses = await getAllCourses();
+      setCourses(allCourses);
+    } catch (error) {
+      console.error("Error loading courses:", error);
+      Alert.alert("오류", "러닝 코스를 불러오는데 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddCourse = async () => {
+    // 필수 입력값 확인
+    if (
+      !newCourse.name ||
+      !newCourse.distance ||
+      !newCourse.startLocation ||
+      !newCourse.endLocation
+    ) {
+      Alert.alert("알림", "모든 필수 항목을 입력해주세요.");
+      return;
+    }
+
+    try {
+      await addCourse(newCourse);
+      Alert.alert("성공", "러닝 코스가 등록되었습니다!");
+
+      // 입력 필드 초기화
+      setNewCourse({
+        name: "",
+        distance: "",
+        startLocation: null,
+        endLocation: null,
+        waypoints: [],
+        description: "",
+        routeCoordinates: [],
+      });
+
+      setModalVisible(false);
+      loadCourses(); // 목록 새로고침
+    } catch (error) {
+      Alert.alert("오류", "러닝 코스 등록에 실패했습니다.");
+      console.error(error);
+    }
+  };
+
+  const updateField = (field, value) => {
+    setNewCourse((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const addWaypoint = () => {
+    setNewCourse((prev) => ({
+      ...prev,
+      waypoints: [...prev.waypoints, null],
+    }));
+  };
+
+  const removeWaypoint = (index) => {
+    setNewCourse((prev) => ({
+      ...prev,
+      waypoints: prev.waypoints.filter((_, i) => i !== index),
+      routeCoordinates: [], // 경유지 변경시 경로 초기화
+    }));
+  };
+
+  const handleMapPress = async (event) => {
+    const { coordinate } = event.nativeEvent;
+
+    if (selectingLocation === "start") {
+      setNewCourse((prev) => ({
+        ...prev,
+        startLocation: coordinate,
+        routeCoordinates: [], // 시작 위치 변경시 경로 초기화
+      }));
+      setSelectingLocation(null);
+
+      // 시작 위치 설정 후 종료 위치가 이미 있으면 경로 계산
+      if (newCourse.endLocation) {
+        await calculateFullRoute(
+          coordinate,
+          newCourse.waypoints,
+          newCourse.endLocation
+        );
+      }
+    } else if (selectingLocation === "end") {
+      setNewCourse((prev) => ({ ...prev, endLocation: coordinate }));
+      setSelectingLocation(null);
+
+      // 종료 위치 설정 후 시작 위치가 있으면 경로 계산
+      if (newCourse.startLocation) {
+        await calculateFullRoute(
+          newCourse.startLocation,
+          newCourse.waypoints,
+          coordinate
+        );
+      }
+    } else if (typeof selectingLocation === "number") {
+      // 경유지 선택
+      const newWaypoints = [...newCourse.waypoints];
+      newWaypoints[selectingLocation] = coordinate;
+      setNewCourse((prev) => ({
+        ...prev,
+        waypoints: newWaypoints,
+        routeCoordinates: [], // 경유지 변경시 경로 초기화
+      }));
+      setSelectingLocation(null);
+
+      // 시작과 종료 위치가 모두 설정되어 있으면 경로 자동 재계산
+      if (newCourse.startLocation && newCourse.endLocation) {
+        await calculateFullRoute(
+          newCourse.startLocation,
+          newWaypoints,
+          newCourse.endLocation
+        );
+      }
+    }
+  };
+
+  // 전체 경로 계산 (시작 -> 경유지들 -> 종료)
+  const calculateFullRoute = async (start, waypoints, end) => {
+    if (!start || !end) return;
+
+    try {
+      setLoadingRoute(true);
+
+      // 모든 포인트 조합: 시작 + 경유지들 + 종료
+      const allPoints = [start, ...waypoints.filter((wp) => wp !== null), end];
+
+      // OSRM URL 생성 (모든 포인트를 세미콜론으로 연결)
+      const coordinates = allPoints
+        .map((point) => `${point.longitude},${point.latitude}`)
+        .join(";");
+
+      const url = `https://router.project-osrm.org/route/v1/walking/${coordinates}?overview=full&geometries=geojson`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const routeCoords = route.geometry.coordinates.map(([lng, lat]) => ({
+          latitude: lat,
+          longitude: lng,
+        }));
+
+        // 거리 계산 (미터를 킬로미터로 변환)
+        const distanceInKm = (route.distance / 1000).toFixed(2);
+
+        setNewCourse((prev) => ({
+          ...prev,
+          routeCoordinates: routeCoords,
+          distance: `${distanceInKm}km`,
+        }));
+      } else {
+        // 경로를 찾을 수 없는 경우
+        Alert.alert("알림", "경로를 찾을 수 없어 직선으로 표시됩니다.");
+        setNewCourse((prev) => ({
+          ...prev,
+          routeCoordinates: allPoints,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching route:", error);
+      Alert.alert("오류", "경로를 가져오는데 실패했습니다.");
+    } finally {
+      setLoadingRoute(false);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+
+        {/* 헤더 */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={28} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>러닝 코스 추천</Text>
+          <TouchableOpacity style={styles.moreButton}>
+            <Ionicons name="ellipsis-horizontal" size={28} color="#333" />
+          </TouchableOpacity>
+        </View>
+
+        {/* 검색바 */}
+        <View style={styles.searchContainer}>
+          <Ionicons
+            name="search"
+            size={20}
+            color="#999"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="코스명, 설명, 거리로 검색하세요"
+            placeholderTextColor="#999"
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearSearchButton}
+              onPress={() => setSearchText("")}
+            >
+              <Ionicons name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* 러닝 코스 등록 섹션 */}
+          <TouchableOpacity
+            style={styles.registerCard}
+            onPress={() => setModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.registerLeftSection}>
+              <View style={styles.registerIconCircle}>
+                <Ionicons name="add-circle" size={32} color="#7AC943" />
+              </View>
+              <View style={styles.registerContent}>
+                <Text style={styles.registerTitle}>새 러닝 코스 등록</Text>
+                <Text style={styles.registerSubtitle}>
+                  나만의 러닝 코스를 공유해보세요
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#999" />
+          </TouchableOpacity>
+
+          {/* 러닝 코스 등록 내역 섹션 */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>러닝 코스 등록 내역 {">"}</Text>
+            <Text style={styles.sectionSubtitle}>
+              지금까지 등록했던 러닝 코스들이에요
+            </Text>
+
+            {/* 코스 리스트 */}
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#7AC943" />
+                <Text style={styles.loadingText}>로딩 중...</Text>
+              </View>
+            ) : filteredCourses.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="map-outline" size={60} color="#ccc" />
+                <Text style={styles.emptyText}>
+                  {searchText
+                    ? "검색 결과가 없습니다"
+                    : "등록된 러닝 코스가 없습니다"}
+                </Text>
+                {searchText && (
+                  <TouchableOpacity
+                    style={styles.resetSearchButton}
+                    onPress={() => setSearchText("")}
+                  >
+                    <Text style={styles.resetSearchText}>검색 초기화</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <View style={styles.courseList}>
+                {filteredCourses.map((course) => (
+                  <TouchableOpacity
+                    key={course.id}
+                    style={styles.courseCard}
+                    onPress={() =>
+                      navigation.navigate("RunningCourseDetail", {
+                        courseId: course.id,
+                      })
+                    }
+                  >
+                    {/* 지도 영역 */}
+                    <View style={styles.mapContainer}>
+                      {course.startLocation && course.endLocation ? (
+                        <MapView
+                          style={styles.mapView}
+                          initialRegion={{
+                            latitude:
+                              (course.startLocation.latitude +
+                                course.endLocation.latitude) /
+                              2,
+                            longitude:
+                              (course.startLocation.longitude +
+                                course.endLocation.longitude) /
+                              2,
+                            latitudeDelta: 0.01,
+                            longitudeDelta: 0.01,
+                          }}
+                          scrollEnabled={false}
+                          zoomEnabled={false}
+                          pitchEnabled={false}
+                          rotateEnabled={false}
+                        >
+                          <Marker
+                            coordinate={course.startLocation}
+                            pinColor="#7AC943"
+                            title="시작"
+                          />
+                          <Marker
+                            coordinate={course.endLocation}
+                            pinColor="#FF6B6B"
+                            title="종료"
+                          />
+                          {course.waypoints?.map((waypoint, index) => (
+                            <Marker
+                              key={`waypoint-${index}`}
+                              coordinate={waypoint}
+                              pinColor="#4A90E2"
+                              title={`경유지 ${index + 1}`}
+                            />
+                          ))}
+                          {course.routeCoordinates &&
+                          course.routeCoordinates.length > 0 ? (
+                            <Polyline
+                              coordinates={course.routeCoordinates}
+                              strokeColor="#7AC943"
+                              strokeWidth={4}
+                              lineCap="round"
+                              lineJoin="round"
+                            />
+                          ) : (
+                            <Polyline
+                              coordinates={[
+                                course.startLocation,
+                                course.endLocation,
+                              ]}
+                              strokeColor="#7AC943"
+                              strokeWidth={3}
+                              strokePattern={[1, 1]}
+                            />
+                          )}
+                        </MapView>
+                      ) : (
+                        <View style={styles.mapPlaceholder}>
+                          <Ionicons name="location" size={40} color="#7AC943" />
+                        </View>
+                      )}
+                    </View>
+
+                    {/* 코스 정보 */}
+                    <View style={styles.courseInfo}>
+                      <Text style={styles.courseName}>{course.name}</Text>
+                      <View style={styles.courseStats}>
+                        <View style={styles.statItem}>
+                          <Ionicons name="navigate" size={16} color="#7AC943" />
+                          <Text style={styles.statValue}>
+                            {course.distance}
+                          </Text>
+                        </View>
+                        {course.description && (
+                          <Text
+                            style={styles.courseDescription}
+                            numberOfLines={2}
+                          >
+                            {course.description}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        </ScrollView>
+
+        {/* 러닝 코스 등록 모달 */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>러닝 코스 등록</Text>
+                  <TouchableOpacity onPress={() => setModalVisible(false)}>
+                    <Ionicons name="close" size={28} color="#333" />
+                  </TouchableOpacity>
                 </View>
 
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {/* 방금 추가된 러닝코스 섹션 */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>방금 추가된 러닝코스</Text>
+                {/* 지도 영역 */}
+                <View style={styles.mapInputContainer}>
+                  <MapView
+                    style={styles.mapInput}
+                    region={mapRegion}
+                    onRegionChangeComplete={setMapRegion}
+                    onPress={handleMapPress}
+                  >
+                    {newCourse.startLocation && (
+                      <Marker
+                        coordinate={newCourse.startLocation}
+                        pinColor="#7AC943"
+                        title="시작 위치"
+                      />
+                    )}
+                    {newCourse.endLocation && (
+                      <Marker
+                        coordinate={newCourse.endLocation}
+                        pinColor="#FF6B6B"
+                        title="종료 위치"
+                      />
+                    )}
+                    {newCourse.waypoints?.map((waypoint, index) => (
+                      <Marker
+                        key={`waypoint-${index}`}
+                        coordinate={waypoint}
+                        pinColor="#4A90E2"
+                        title={`경유지 ${index + 1}`}
+                      />
+                    ))}
+                    {newCourse.routeCoordinates &&
+                    newCourse.routeCoordinates.length > 0 ? (
+                      <Polyline
+                        coordinates={newCourse.routeCoordinates}
+                        strokeColor="#7AC943"
+                        strokeWidth={4}
+                        lineCap="round"
+                        lineJoin="round"
+                      />
+                    ) : (
+                      newCourse.startLocation &&
+                      newCourse.endLocation && (
+                        <Polyline
+                          coordinates={[
+                            newCourse.startLocation,
+                            newCourse.endLocation,
+                          ]}
+                          strokeColor="#999"
+                          strokeWidth={2}
+                          strokePattern={[10, 5]}
+                        />
+                      )
+                    )}
+                  </MapView>
 
-                        {/* 프로필 아이콘들 */}
-                        <View style={styles.profileContainer}>
-                            {profiles.map((profile) => (
-                                <View key={profile.id} style={styles.profileItem}>
-                                    <View style={styles.profileCircle}>
-                                        <Text style={styles.profileEmoji}>{profile.emoji}</Text>
-                                    </View>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-
-                    {/* 러닝 코스 등록 섹션 */}
-                    <TouchableOpacity style={styles.registerCard}>
-                        <View style={styles.registerContent}>
-                            <Text style={styles.registerTitle}>러닝 코스 등록 {'>'}</Text>
-                            <Text style={styles.registerSubtitle}>
-                                ㅇㅇ님만의 러닝 코스가 있다면 알려주세요
-                            </Text>
-                        </View>
-                        <View style={styles.registerIconContainer}>
-                            <View style={styles.registerIconCircle}>
-                                <Ionicons name="add" size={28} color="#7AC943" />
-                            </View>
-                        </View>
+                  {/* 위치 선택 버튼 */}
+                  <View style={styles.locationButtonsContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.locationButton,
+                        selectingLocation === "start" &&
+                          styles.locationButtonActive,
+                      ]}
+                      onPress={() => setSelectingLocation("start")}
+                    >
+                      <Ionicons
+                        name="play-circle"
+                        size={20}
+                        color={
+                          selectingLocation === "start" ? "#fff" : "#7AC943"
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.locationButtonText,
+                          selectingLocation === "start" &&
+                            styles.locationButtonTextActive,
+                        ]}
+                      >
+                        시작 위치
+                        {newCourse.startLocation && " ✓"}
+                      </Text>
                     </TouchableOpacity>
 
-                    {/* 러닝 코스 등록 내역 섹션 */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>러닝 코스 등록 내역 {'>'}</Text>
-                        <Text style={styles.sectionSubtitle}>
-                            지금까지 등록했던 러닝 코스들이에요
-                        </Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.locationButton,
+                        selectingLocation === "end" &&
+                          styles.locationButtonActive,
+                      ]}
+                      onPress={() => setSelectingLocation("end")}
+                    >
+                      <Ionicons
+                        name="stop-circle"
+                        size={20}
+                        color={selectingLocation === "end" ? "#fff" : "#FF6B6B"}
+                      />
+                      <Text
+                        style={[
+                          styles.locationButtonText,
+                          selectingLocation === "end" &&
+                            styles.locationButtonTextActive,
+                        ]}
+                      >
+                        종료 위치
+                        {newCourse.endLocation && " ✓"}
+                      </Text>
+                    </TouchableOpacity>
 
-                        {/* 코스 리스트 */}
-                        <View style={styles.courseList}>
-                            {courses.map((course) => (
-                                <TouchableOpacity key={course.id} style={styles.courseCard}>
-                                    {/* 지도 영역 */}
-                                    <View style={styles.mapContainer}>
-                                        <View style={styles.mapPlaceholder}>
-                                            <Ionicons name="location" size={40} color="#7AC943" />
-                                        </View>
-                                    </View>
+                    <TouchableOpacity
+                      style={styles.addWaypointButton}
+                      onPress={addWaypoint}
+                    >
+                      <Ionicons name="add-circle" size={20} color="#4A90E2" />
+                      <Text style={styles.addWaypointButtonText}>
+                        경유지 추가
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
 
-                                    {/* 코스 정보 */}
-                                    <View style={styles.courseInfo}>
-                                        <Text style={styles.courseName}>{course.name}</Text>
-                                        <Text style={styles.courseDate}>
-                                            {course.date} | {course.time}
-                                        </Text>
-                                        <View style={styles.courseStats}>
-                                            <View style={styles.statItem}>
-                                                <Text style={styles.statValue}>
-                                                    {course.calories}
-                                                </Text>
-                                            </View>
-                                            <View style={styles.statItem}>
-                                                <Text style={styles.statValue}>
-                                                    {course.distance}
-                                                </Text>
-                                            </View>
-                                            <View style={styles.statItem}>
-                                                <Text style={styles.statValue}>
-                                                    {course.steps}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
+                  {/* 경유지 목록 */}
+                  {newCourse.waypoints && newCourse.waypoints.length > 0 && (
+                    <View style={styles.waypointsContainer}>
+                      <Text style={styles.waypointsTitle}>
+                        경유지 ({newCourse.waypoints.length})
+                      </Text>
+                      {newCourse.waypoints.map((waypoint, index) => (
+                        <View key={index} style={styles.waypointItem}>
+                          <TouchableOpacity
+                            style={[
+                              styles.waypointSelectButton,
+                              selectingLocation === index &&
+                                styles.waypointSelectButtonActive,
+                            ]}
+                            onPress={() => setSelectingLocation(index)}
+                          >
+                            <Ionicons
+                              name="location"
+                              size={16}
+                              color={
+                                selectingLocation === index ? "#fff" : "#4A90E2"
+                              }
+                            />
+                            <Text
+                              style={[
+                                styles.waypointText,
+                                selectingLocation === index &&
+                                  styles.waypointTextActive,
+                              ]}
+                            >
+                              경유지 {index + 1}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => removeWaypoint(index)}
+                            style={styles.removeWaypointButton}
+                          >
+                            <Ionicons
+                              name="close-circle"
+                              size={20}
+                              color="#FF6B6B"
+                            />
+                          </TouchableOpacity>
                         </View>
+                      ))}
                     </View>
-                </ScrollView>
-            </SafeAreaView>
-        </TabScreenLayout>
-    );
-}
+                  )}
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#D4E9D7',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#333',
-    },
-    moreButton: {
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
-        alignItems: 'flex-end',
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 100,
-    },
-    section: {
-        marginTop: 20,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#333',
-        marginBottom: 6,
-    },
-    sectionSubtitle: {
-        fontSize: 13,
-        color: '#999',
-        marginBottom: 16,
-    },
-    profileContainer: {
-        flexDirection: 'row',
-        marginTop: 12,
-    },
-    profileItem: {
-        marginRight: 12,
-    },
-    profileCircle: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#FFFFFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 3,
-        borderColor: '#E8F5E0',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    profileEmoji: {
-        fontSize: 28,
-    },
-    registerCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        padding: 18,
-        marginTop: 20,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    registerContent: {
-        flex: 1,
-    },
-    registerTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 6,
-    },
-    registerSubtitle: {
-        fontSize: 13,
-        color: '#999',
-    },
-    registerIconContainer: {
-        marginLeft: 12,
-    },
-    registerIconCircle: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#E8F5E0',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    courseList: {
-        marginTop: 8,
-    },
-    courseCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        overflow: 'hidden',
-    },
-    mapContainer: {
-        width: '100%',
-        height: 140,
-        backgroundColor: '#F5F5F5',
-    },
-    mapPlaceholder: {
-        width: '100%',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#E8F5E0',
-    },
-    courseInfo: {
-        padding: 16,
-    },
-    courseName: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 6,
-    },
-    courseDate: {
-        fontSize: 13,
-        color: '#777',
-        marginBottom: 12,
-    },
-    courseStats: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    statItem: {
-        flex: 1,
-    },
-    statValue: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#7AC943',
-    },
-});
+                  <Text style={styles.mapHint}>
+                    {loadingRoute ? (
+                      <View style={styles.loadingRouteContainer}>
+                        <ActivityIndicator size="small" color="#7AC943" />
+                        <Text style={styles.loadingRouteText}>
+                          경로를 계산하는 중...
+                        </Text>
+                      </View>
+                    ) : selectingLocation === "start" ? (
+                      "지도를 클릭하여 시작 위치를 선택하세요"
+                    ) : selectingLocation === "end" ? (
+                      "지도를 클릭하여 종료 위치를 선택하세요"
+                    ) : typeof selectingLocation === "number" ? (
+                      `지도를 클릭하여 경유지 ${
+                        selectingLocation + 1
+                      }을 선택하세요`
+                    ) : newCourse.routeCoordinates &&
+                      newCourse.routeCoordinates.length > 0 ? (
+                      "✓ 경로가 설정되었습니다"
+                    ) : (
+                      "시작/종료 버튼을 눌러 위치를 선택하세요"
+                    )}
+                  </Text>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>코스명 *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="예: 한강 러닝코스"
+                    value={newCourse.name}
+                    onChangeText={(text) => updateField("name", text)}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>거리 *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="예: 8.41km (자동 계산 가능)"
+                    value={newCourse.distance}
+                    onChangeText={(text) => updateField("distance", text)}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>설명</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder="코스에 대한 설명을 입력하세요"
+                    value={newCourse.description}
+                    onChangeText={(text) => updateField("description", text)}
+                    multiline
+                    numberOfLines={4}
+                  />
+                </View>
+
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <Text style={styles.cancelButtonText}>취소</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.submitButton]}
+                    onPress={handleAddCourse}
+                  >
+                    <Text style={styles.submitButtonText}>등록</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </View>
+  );
+}
