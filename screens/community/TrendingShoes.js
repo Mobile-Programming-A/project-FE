@@ -47,7 +47,7 @@ export default function TrendingShoes({ navigation }) {
   const [filteredShoes, setFilteredShoes] = useState([]);
   const [likedShoes, setLikedShoes] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
-  const [sortBy, setSortBy] = useState("none"); // 정렬 기준
+  const [sortBy, setSortBy] = useState("rating"); // 정렬 기준 - 기본값: 별점순
   const [showSortDropdown, setShowSortDropdown] = useState(false); // 정렬 드롭다운 표시 여부
   const [newShoe, setNewShoe] = useState({
     brand: "",
@@ -342,15 +342,24 @@ export default function TrendingShoes({ navigation }) {
           )}
         </View>
 
-        {/* 정렬 드롭다운 */}
+        {/* 신발 추가 버튼 & 정렬 드롭다운 */}
         <View style={styles.sortContainer}>
+          {/* 신발 추가 버튼 - 왼쪽 */}
+          <TouchableOpacity
+            style={styles.addShoeButton}
+            onPress={() => setModalVisible(true)}
+          >
+            <Ionicons name="add-circle-outline" size={23} color="#fff" />
+          </TouchableOpacity>
+
+          {/* 정렬 드롭다운 - 오른쪽 */}
           <TouchableOpacity
             style={styles.sortSelector}
             onPress={() => setShowSortDropdown(!showSortDropdown)}
           >
             <Text style={styles.sortSelectorText}>
               {sortBy === "none"
-                ? "기본"
+                ? "없음"
                 : sortBy === "priceHigh"
                 ? "높은 가격순"
                 : sortBy === "priceLow"
@@ -384,7 +393,7 @@ export default function TrendingShoes({ navigation }) {
                     sortBy === "none" && styles.sortOptionTextActive,
                   ]}
                 >
-                  기본
+                  없음
                 </Text>
                 {sortBy === "none" && (
                   <Ionicons name="checkmark" size={20} color="#2196F3" />
