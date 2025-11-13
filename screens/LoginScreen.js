@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { LinearGradient } from 'expo-linear-gradient';
+
 import { useRouter } from 'expo-router';
 import { defaultCharacter } from '../data/characters';
 import React, { useEffect, useState } from 'react';
@@ -24,12 +25,17 @@ export default function LoginScreen() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
+    
     // Google 인증 요청 - iOS와 웹 클라이언트 ID 설정
+
     const [request, response, promptAsync] = Google.useAuthRequest({
-        androidClientId: '656771928173-okuho4n8ugjk5h1hc9lnh2oi9g4j0dih.apps.googleusercontent.com',
-        iosClientId: '656771928173-okuho4n8ugjk5h1hc9lnh2oi9g4j0dih.apps.googleusercontent.com',
-        webClientId: '656771928173-3tdf4229ete02t5rkvtv7tgmu8coh0k7.apps.googleusercontent.com',
-    });
+  androidClientId: "656771928173-okuhoa8ugjk5h1hc9ln2hoig94j0.apps.googleusercontent.com",
+  iosClientId: "656771928173-okuhoa8ugjk5h1hc9ln2hoig94j0.apps.googleusercontent.com",
+  webClientId: "656771928173-3tdf4229ete02t5rkvvt7gmubcoh8e2.apps.googleusercontent.com",
+  redirectUri: "https://auth.expo.io/@seojung024/RunningApp",
+  scopes: ["profile", "email"],
+});
+
 
     // 인증 응답 처리
     useEffect(() => {
