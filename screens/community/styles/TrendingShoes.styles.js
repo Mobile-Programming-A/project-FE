@@ -66,7 +66,8 @@ const styles = StyleSheet.create({
     position: "relative",
     zIndex: 1000,
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between", // 양쪽 끝 정렬
+    alignItems: "center",
   },
   sortSelector: {
     flexDirection: "row",
@@ -336,10 +337,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#7AC943",
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 12,
-    gap: 8,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
