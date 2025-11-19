@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import React, { useCallback, useState } from 'react';
 import {
     Dimensions,
@@ -18,24 +19,128 @@ import {
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import TabScreenLayout from '../components/TabScreenLayout';
 import { characters, getCharacterById, getSelectedCharacterOrDefault, defaultCharacter } from '../data/characters';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../services/config';
 
 const { width } = Dimensions.get('window');
+
+// 아바타 이미지 매핑
+const avatarImages = {
+    avatar1: require('../assets/images/avatar1.png'),
+    avatar2: require('../assets/images/avatar2.png'),
+    avatar3: require('../assets/images/avatar3.png'),
+    avatar4: require('../assets/images/avatar4.png'),
+    avatar5: require('../assets/images/avatar5.png'),
+};
 
 export default function ExerciseScreen() {
     const router = useRouter();
     const [totalDistance, setTotalDistance] = useState(0);
     const [totalTime, setTotalTime] = useState(0);
     const [lastRunDate, setLastRunDate] = useState(null);
-    const [lastRunPath, setLastRunPath] = useState(null); // 최근 러닝 경로
+    const [lastRunPath, setLastRunPath] = useState(null);
     const [selectedCharacter, setSelectedCharacter] = useState(null);
+    
+    // 친구 목록 상태
+    const [friends, setFriends] = useState([]);
+    const [selectedFriendPreview, setSelectedFriendPreview] = useState(null);
+    
+    // 내 현재 위치
+    const [myLocation, setMyLocation] = useState(null);
 
     // 화면이 포커스될 때마다 기록 및 캐릭터 불러오기
     useFocusEffect(
         useCallback(() => {
             loadRecords();
             loadSelectedCharacter();
+            loadMyLocation();
         }, [])
     );
+
+    // 친구 목록 실시간 동기화
+    useFocusEffect(
+        useCallback(() => {
+            const friendsRef = collection(db, 'friends');
+            
+            const unsubscribe = onSnapshot(
+                friendsRef,
+                (querySnapshot) => {
+                    const data = querySnapshot.docs.map((doc) => {
+                        const f = doc.data();
+                        return {
+                            id: doc.id,
+                            name: f.name || '이름 없음',
+                            avatar: f.avatar?.trim() || 'avatar1',
+                            status: f.status || '',
+                            stats: {
+                                step: f['stats.step'] ?? f.stats?.step ?? 0,
+                                cal: f['stats.cal'] ?? f.stats?.cal ?? 0,
+                                dist: f['stats.dist'] ?? f.stats?.dist ?? 0,
+                            },
+                            lat: f.latitude ?? 37.58,
+                            lng: f.longitude ?? 127.1,
+                        };
+                    });
+                    
+                    setFriends(data);
+                },
+                (error) => {
+                    console.error('친구 목록 불러오기 실패:', error);
+                }
+            );
+
+            return () => unsubscribe();
+        }, [])
+    );
+
+    // 내 위치 불러오기
+    const loadMyLocation = async () => {
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted') {
+                const location = await Location.getCurrentPositionAsync({});
+                setMyLocation({
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                });
+            }
+        } catch (error) {
+            console.error('위치 불러오기 실패:', error);
+        }
+    };
+
+    // 두 지점 간의 거리 계산 (Haversine formula)
+    const calculateDistance = (lat1, lon1, lat2, lon2) => {
+        const R = 6371; // 지구 반지름 (km)
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    // 가까운 친구 3명 찾기
+    const getNearbyFriends = () => {
+        if (!myLocation || friends.length === 0) return [];
+
+        const friendsWithDistance = friends.map(friend => ({
+            ...friend,
+            distance: calculateDistance(
+                myLocation.latitude,
+                myLocation.longitude,
+                friend.lat,
+                friend.lng
+            )
+        }));
+
+        // 거리순 정렬 후 3명만 반환
+        return friendsWithDistance
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 3);
+    };
 
     // 저장된 캐릭터 불러오기
     const loadSelectedCharacter = async () => {
@@ -45,11 +150,11 @@ export default function ExerciseScreen() {
                 const character = getCharacterById(savedCharacterId);
                 setSelectedCharacter(character || characters[0]);
             } else {
-                setSelectedCharacter(characters[0]); // 기본값
+                setSelectedCharacter(characters[0]);
             }
         } catch (error) {
             console.error('캐릭터 불러오기 실패:', error);
-            setSelectedCharacter(characters[0]); // 기본값
+            setSelectedCharacter(characters[0]);
         }
     };
 
@@ -61,19 +166,16 @@ export default function ExerciseScreen() {
                 const records = JSON.parse(recordsJson);
 
                 if (records.length > 0) {
-                    // 전체 거리와 시간 합계 계산
                     const distance = records.reduce((sum, record) => sum + record.distance, 0);
                     const time = records.reduce((sum, record) => sum + record.time, 0);
 
                     setTotalDistance(distance);
                     setTotalTime(time);
 
-                    // 가장 최근 기록의 날짜 및 경로
                     const sortedRecords = records.sort((a, b) => new Date(b.date) - new Date(a.date));
                     const lastRecord = sortedRecords[0];
                     setLastRunDate(lastRecord.date);
 
-                    // 경로 좌표가 있으면 저장
                     if (lastRecord.pathCoords && lastRecord.pathCoords.length > 0) {
                         setLastRunPath(lastRecord.pathCoords);
                     } else {
@@ -86,7 +188,7 @@ export default function ExerciseScreen() {
         }
     };
 
-    // 시간 포맷팅 (초 -> 분:초)
+    // 시간 포맷팅
     const formatTime = (seconds) => {
         const hours = Math.floor(seconds / 3600);
         const mins = Math.floor((seconds % 3600) / 60);
@@ -112,11 +214,25 @@ export default function ExerciseScreen() {
     // 경로 좌표에 맞는 지도 영역 계산
     const getRegionForCoordinates = (coordinates) => {
         if (!coordinates || coordinates.length === 0) {
-            return {
+            // 친구들이 있으면 친구들 기준으로
+            if (nearbyFriends.length > 0) {
+                return getRegionForFriends(nearbyFriends);
+            }
+            // 내 위치가 있으면 내 위치 기준으로
+            if (myLocation) {
+                return {
+                    latitude: myLocation.latitude,
+                    longitude: myLocation.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                };
+            }
+            // 기본 위치(한성대)
+        return {
                 latitude: 37.5665,
                 longitude: 126.9780,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
             };
         }
 
@@ -125,7 +241,6 @@ export default function ExerciseScreen() {
         let minLng = coordinates[0].longitude;
         let maxLng = coordinates[0].longitude;
 
-        // 모든 좌표를 확인하여 최소/최대값 찾기
         coordinates.forEach(coord => {
             minLat = Math.min(minLat, coord.latitude);
             maxLat = Math.max(maxLat, coord.latitude);
@@ -133,15 +248,10 @@ export default function ExerciseScreen() {
             maxLng = Math.max(maxLng, coord.longitude);
         });
 
-        // 중심점 계산
         const centerLat = (minLat + maxLat) / 2;
         const centerLng = (minLng + maxLng) / 2;
-
-        // Delta 계산 (약간의 여백 추가)
         const latDelta = (maxLat - minLat) * 2.5;
         const lngDelta = (maxLng - minLng) * 2.5;
-
-        // 최소 delta 값 보장 (너무 확대되는 것 방지)
         const minDelta = 0.003;
 
         return {
@@ -151,6 +261,71 @@ export default function ExerciseScreen() {
             longitudeDelta: Math.max(lngDelta, minDelta),
         };
     };
+
+    // 친구들 위치 기준으로 지도 영역 계산
+    const getRegionForFriends = (friendsList) => {
+        if (!friendsList || friendsList.length === 0) {
+            if (myLocation) {
+                return {
+                    latitude: myLocation.latitude,
+                    longitude: myLocation.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                };
+            }
+            return {
+                latitude: 37.5665,
+                longitude: 126.9780,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+            };
+        }
+
+        // 내 위치도 포함해서 계산
+        const allLocations = [...friendsList];
+        if (myLocation) {
+            allLocations.push({ lat: myLocation.latitude, lng: myLocation.longitude });
+        }
+
+        let minLat = allLocations[0].lat;
+        let maxLat = allLocations[0].lat;
+        let minLng = allLocations[0].lng;
+        let maxLng = allLocations[0].lng;
+
+        allLocations.forEach(loc => {
+            minLat = Math.min(minLat, loc.lat);
+            maxLat = Math.max(maxLat, loc.lat);
+            minLng = Math.min(minLng, loc.lng);
+            maxLng = Math.max(maxLng, loc.lng);
+        });
+
+        const centerLat = (minLat + maxLat) / 2;
+        const centerLng = (minLng + maxLng) / 2;
+        
+        // 약간의 여백 추가
+        const latDelta = Math.max((maxLat - minLat) * 1.5, 0.005);
+        const lngDelta = Math.max((maxLng - minLng) * 1.5, 0.005);
+
+        return {
+            latitude: centerLat,
+            longitude: centerLng,
+            latitudeDelta: latDelta,
+            longitudeDelta: lngDelta,
+        };
+    };
+
+    // 친구 마커 클릭 핸들러
+    const handleFriendMarkerPress = (friend) => {
+        // 같은 친구를 다시 누르면 정보창 닫기
+        if (selectedFriendPreview?.id === friend.id) {
+            setSelectedFriendPreview(null);
+        } else {
+            setSelectedFriendPreview(friend);
+        }
+    };
+
+    // 가까운 친구들 가져오기
+    const nearbyFriends = getNearbyFriends();
 
     return (
         <TabScreenLayout>
@@ -172,7 +347,9 @@ export default function ExerciseScreen() {
                                 source={require('../assets/images/avatar1.png')}
                                 style={styles.profileImage}
                             />
-                            <Text style={styles.profileName}>{selectedCharacter ? selectedCharacter.name : defaultCharacter.name}</Text>
+                            <Text style={styles.profileName}>
+                                {selectedCharacter ? selectedCharacter.name : defaultCharacter.name}
+                            </Text>
                         </TouchableOpacity>
                         <View style={styles.chatBubble} />
                     </View>
@@ -185,83 +362,183 @@ export default function ExerciseScreen() {
                         />
                     </View>
 
-                    {/* Map Section */}
-                    <View style={styles.mapContainer}>
-                        <View style={styles.mapPlaceholder}>
-                            {lastRunPath && lastRunPath.length > 1 ? (
-                                // 실제 러닝 경로 표시
-                                <MapView
-                                    style={styles.mapView}
-                                    provider={PROVIDER_GOOGLE}
-                                    initialRegion={getRegionForCoordinates(lastRunPath)}
-                                    scrollEnabled={false}
-                                    zoomEnabled={false}
-                                    pitchEnabled={false}
-                                    rotateEnabled={false}
-                                    pointerEvents="none"
-                                >
-                                    {/* 러닝 경로 */}
-                                    <Polyline
-                                        coordinates={lastRunPath}
-                                        strokeColor="#7FD89A"
-                                        strokeWidth={5}
-                                    />
-
-                                    {/* 시작 마커 */}
-                                    <Marker
-                                        coordinate={lastRunPath[0]}
-                                        anchor={{ x: 0.5, y: 0.5 }}
+                    {/* Map Section with Friends Preview - 흰색 박스로 감싸기 */}
+                    <View style={styles.mapOuterContainer}>
+                        <View style={styles.mapContainer}>
+                            <View style={styles.mapPlaceholder}>
+                                {lastRunPath && lastRunPath.length > 1 ? (
+                                    <MapView
+                                        style={styles.mapView}
+                                        provider={PROVIDER_GOOGLE}
+                                        initialRegion={getRegionForCoordinates(lastRunPath)}
+                                        scrollEnabled={true}
+                                        zoomEnabled={true}
+                                        pitchEnabled={true}
+                                        rotateEnabled={true}
                                     >
-                                        <View style={styles.startMarker}>
-                                            <Ionicons name="play-circle" size={20} color="#4CAF50" />
-                                        </View>
-                                    </Marker>
+                                        {/* 러닝 경로 */}
+                                        <Polyline
+                                            coordinates={lastRunPath}
+                                            strokeColor="#7FD89A"
+                                            strokeWidth={5}
+                                        />
 
-                                    {/* 끝 마커 */}
-                                    <Marker
-                                        coordinate={lastRunPath[lastRunPath.length - 1]}
-                                        anchor={{ x: 0.5, y: 0.5 }}
+                                        {/* 시작 마커 */}
+                                        <Marker
+                                            coordinate={lastRunPath[0]}
+                                            anchor={{ x: 0.5, y: 0.5 }}
+                                        >
+                                            <View style={styles.startMarker}>
+                                                <Ionicons name="play-circle" size={20} color="#4CAF50" />
+                                            </View>
+                                        </Marker>
+
+                                        {/* 끝 마커 */}
+                                        <Marker
+                                            coordinate={lastRunPath[lastRunPath.length - 1]}
+                                            anchor={{ x: 0.5, y: 0.5 }}
+                                        >
+                                            <View style={styles.endMarker}>
+                                                <Ionicons name="flag" size={20} color="#FF5252" />
+                                            </View>
+                                        </Marker>
+
+                                        {/* 친구 마커들 - 가까운 친구 3명만 표시 */}
+                                        {nearbyFriends.map((friend) => (
+                                            <Marker
+                                                key={friend.id}
+                                                coordinate={{
+                                                    latitude: friend.lat,
+                                                    longitude: friend.lng,
+                                                }}
+                                                onPress={() => handleFriendMarkerPress(friend)}
+                                            >
+                                                <View style={styles.friendMarker}>
+                                                    <Image
+                                                        source={avatarImages[friend.avatar]}
+                                                        style={styles.friendMarkerImage}
+                                                    />
+                                                </View>
+                                            </Marker>
+                                        ))}
+                                    </MapView>
+                                ) : (
+                                    <MapView
+                                        style={styles.mapView}
+                                        provider={PROVIDER_GOOGLE}
+                                        region={getRegionForFriends(nearbyFriends)}
+                                        scrollEnabled={true}
+                                        zoomEnabled={true}
+                                        pitchEnabled={true}
+                                        rotateEnabled={true}
                                     >
-                                        <View style={styles.endMarker}>
-                                            <Ionicons name="flag" size={20} color="#FF5252" />
+                                        {/* 친구 마커들 - 가까운 친구 3명만 표시 */}
+                                        {nearbyFriends.map((friend) => (
+                                            <Marker
+                                                key={friend.id}
+                                                coordinate={{
+                                                    latitude: friend.lat,
+                                                    longitude: friend.lng,
+                                                }}
+                                                onPress={() => handleFriendMarkerPress(friend)}
+                                            >
+                                                <View style={styles.friendMarker}>
+                                                    <Image
+                                                        source={avatarImages[friend.avatar]}
+                                                        style={styles.friendMarkerImage}
+                                                    />
+                                                </View>
+                                            </Marker>
+                                        ))}
+                                    </MapView>
+                                )}
+
+                                {/* 친구 미리보기 카드 */}
+                                {selectedFriendPreview && (
+                                    <View style={styles.friendPreviewCard}>
+                                        <TouchableOpacity
+                                            style={styles.friendPreviewClose}
+                                            onPress={() => setSelectedFriendPreview(null)}
+                                        >
+                                            <Ionicons name="close" size={16} color="#666" />
+                                        </TouchableOpacity>
+                                        
+                                        <View style={styles.friendPreviewContent}>
+                                            <Image
+                                                source={avatarImages[selectedFriendPreview.avatar]}
+                                                style={styles.friendPreviewAvatar}
+                                            />
+                                            <View style={styles.friendPreviewInfo}>
+                                                <Text style={styles.friendPreviewName}>
+                                                    {selectedFriendPreview.name}
+                                                </Text>
+                                                <Text style={styles.friendPreviewStatus}>
+                                                    {selectedFriendPreview.status || '활동 중'}
+                                                </Text>
+                                            </View>
                                         </View>
-                                    </Marker>
-                                </MapView>
-                            ) : (
-                                // 기록이 없을 때 placeholder
-                                <>
-                                    <View style={styles.emptyMapContainer}>
-                                        <Ionicons name="map-outline" size={48} color="#CCC" />
-                                        <Text style={styles.emptyMapText}>러닝 기록이 없습니다</Text>
+                                        
+                                        <View style={styles.friendPreviewStats}>
+                                            <View style={styles.friendPreviewStat}>
+                                                <Ionicons name="walk-outline" size={14} color="#7AC943" />
+                                                <Text style={styles.friendPreviewStatText}>
+                                                    {selectedFriendPreview.stats.step}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.friendPreviewStat}>
+                                                <Ionicons name="flame-outline" size={14} color="#FF8C00" />
+                                                <Text style={styles.friendPreviewStatText}>
+                                                    {selectedFriendPreview.stats.cal}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.friendPreviewStat}>
+                                                <Ionicons name="map-outline" size={14} color="#3F72AF" />
+                                                <Text style={styles.friendPreviewStatText}>
+                                                    {selectedFriendPreview.stats.dist}km
+                                                </Text>
+                                            </View>
+                                        </View>
                                     </View>
-                                </>
-                            )}
+                                )}
+                            </View>
+
+                            {/* Map Date Label */}
+                            <Text style={styles.mapDate}>
+                                {lastRunDate ? formatDate(lastRunDate) : formatDate(new Date().toISOString())}
+                            </Text>
+
+                            {/* Avatar List on Side */}
+                            <TouchableOpacity
+                                style={styles.avatarList}
+                                onPress={() => router.push('/(tabs)/friends')}
+                                activeOpacity={0.7}
+                            >
+                                <View style={styles.avatarBadge}>
+                                    <Text style={styles.badgeText}>친구</Text>
+                                </View>
+                                {friends.slice(0, 2).map((friend) => (
+                                    <View key={friend.id} style={styles.avatarItem}>
+                                        <Image
+                                            source={avatarImages[friend.avatar]}
+                                            style={styles.avatarItemImage}
+                                        />
+                                    </View>
+                                ))}
+                                {friends.length === 0 && (
+                                    <>
+                                        <View style={styles.avatarItem}>
+                                            <Text style={styles.avatarEmoji}>👤</Text>
+                                        </View>
+                                        <View style={styles.avatarItem}>
+                                            <Text style={styles.avatarEmoji}>🥭</Text>
+                                        </View>
+                                    </>
+                                )}
+                                <View style={styles.moreButton}>
+                                    <Text style={styles.moreText}>•••</Text>
+                                </View>
+                            </TouchableOpacity>
                         </View>
-
-                        {/* Map Date Label */}
-                        <Text style={styles.mapDate}>
-                            {lastRunDate ? formatDate(lastRunDate) : '기록이 없습니다'}
-                        </Text>
-
-                        {/* Avatar List on Side */}
-                        <TouchableOpacity
-                            style={styles.avatarList}
-                            onPress={() => router.push('/(tabs)/friends')}
-                            activeOpacity={0.7}
-                        >
-                            <View style={styles.avatarBadge}>
-                                <Text style={styles.badgeText}>친구</Text>
-                            </View>
-                            <View style={styles.avatarItem}>
-                                <Text style={styles.avatarEmoji}>👤</Text>
-                            </View>
-                            <View style={styles.avatarItem}>
-                                <Text style={styles.avatarEmoji}>🥭</Text>
-                            </View>
-                            <View style={styles.moreButton}>
-                                <Text style={styles.moreText}>•••</Text>
-                            </View>
-                        </TouchableOpacity>
                     </View>
 
                     {/* Stats Card */}
@@ -300,7 +577,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 120, // 하단 여백 (네비게이션 바 고려)
+        paddingBottom: 120,
     },
     header: {
         flexDirection: 'row',
@@ -336,24 +613,30 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 20,
     },
-    characterPlaceholder: {
+    character: {
         width: 150,
         height: 150,
-        justifyContent: 'center',
-        alignItems: 'center',
+        resizeMode: 'contain',
     },
-    characterEmoji: {
-        fontSize: 100,
-    },
-    mapContainer: {
+    mapOuterContainer: {
         marginHorizontal: 20,
         marginTop: 10,
+        backgroundColor: '#FFF',
+        borderRadius: 24,
+        padding: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    mapContainer: {
         position: 'relative',
     },
     mapPlaceholder: {
         height: 200,
         backgroundColor: '#F5F5F5',
-        borderRadius: 20,
+        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
@@ -362,49 +645,105 @@ const styles = StyleSheet.create({
     mapView: {
         width: '100%',
         height: '100%',
-        borderRadius: 20,
+        borderRadius: 16,
     },
-    emptyMapContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100%',
+    startMarker: {
+        backgroundColor: '#FFF',
+        borderRadius: 16,
+        padding: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
-    emptyMapText: {
-        fontSize: 14,
-        color: '#999',
-        marginTop: 8,
+    endMarker: {
+        backgroundColor: '#FFF',
+        borderRadius: 16,
+        padding: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
-    mapImage: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        borderRadius: 20,
-    },
-    mapOverlay: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    mapText: {
-        fontSize: 16,
-        color: '#999',
-    },
-    mapMarker: {
-        position: 'absolute',
-        width: 40,
-        height: 40,
+    friendMarker: {
         backgroundColor: '#FFF',
         borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
+        padding: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
         borderWidth: 2,
-        borderColor: '#4A90E2',
-        top: 60,
-        left: 50,
+        borderColor: '#7AC943',
     },
-    markerEmoji: {
-        fontSize: 24,
+    friendMarkerImage: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+    },
+    friendPreviewCard: {
+        position: 'absolute',
+        bottom: 10,
+        left: 10,
+        right: 10,
+        backgroundColor: '#FFF',
+        borderRadius: 12,
+        padding: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    friendPreviewClose: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        zIndex: 1,
+    },
+    friendPreviewContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    friendPreviewAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        marginRight: 10,
+    },
+    friendPreviewInfo: {
+        flex: 1,
+    },
+    friendPreviewName: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#333',
+    },
+    friendPreviewStatus: {
+        fontSize: 11,
+        color: '#666',
+        marginTop: 2,
+    },
+    friendPreviewStats: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#F0F0F0',
+    },
+    friendPreviewStat: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    friendPreviewStatText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#333',
     },
     mapDate: {
         fontSize: 12,
@@ -442,6 +781,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,
+    },
+    avatarItemImage: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
     },
     avatarEmoji: {
         fontSize: 24,
@@ -489,30 +833,5 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#999',
         marginTop: 5,
-    },
-    character: {
-        width: 150,
-        height: 150,
-        resizeMode: 'contain',
-    },
-    startMarker: {
-        backgroundColor: '#FFF',
-        borderRadius: 16,
-        padding: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    endMarker: {
-        backgroundColor: '#FFF',
-        borderRadius: 16,
-        padding: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
     },
 });
