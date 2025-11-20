@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import React, { useCallback, useState } from 'react';
 import {
     Dimensions,
@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import MapSection from '../components/MapSection';
 import TabScreenLayout from '../components/TabScreenLayout';
-import { characters, defaultCharacter, getCharacterById } from '../data/characters';
+import { characters, defaultCharacter, getCharacterById, getProfileImageById, profileImages } from '../data/characters';
 import { db } from '../services/config';
 
 const { width } = Dimensions.get('window');
@@ -46,6 +46,7 @@ export default function MainScreen() {
     const [lastRunDate, setLastRunDate] = useState(null);
     const [lastRunPath, setLastRunPath] = useState(null);
     const [selectedCharacter, setSelectedCharacter] = useState(null);
+    const [selectedProfileImage, setSelectedProfileImage] = useState(null);
     const [encouragingMessage, setEncouragingMessage] = useState('');
 
     // 친구 목록 상태
@@ -65,6 +66,7 @@ export default function MainScreen() {
         useCallback(() => {
             loadRecords();
             loadSelectedCharacter();
+            loadSelectedProfileImage();
             setEncouragingMessage(getRandomMessage());
             loadMyLocation();
         }, [])
@@ -125,6 +127,7 @@ export default function MainScreen() {
     // 저장된 캐릭터 불러오기
     const loadSelectedCharacter = async () => {
         try {
+            // AsyncStorage에서 먼저 확인
             const savedCharacterId = await AsyncStorage.getItem('selectedCharacterId');
             if (savedCharacterId) {
                 const character = getCharacterById(savedCharacterId);
@@ -135,6 +138,52 @@ export default function MainScreen() {
         } catch (error) {
             console.error('캐릭터 불러오기 실패:', error);
             setSelectedCharacter(characters[0]);
+        }
+    };
+
+    // 저장된 프로필 사진 불러오기
+    const loadSelectedProfileImage = async () => {
+        try {
+            // AsyncStorage에서 먼저 확인
+            const savedProfileImageId = await AsyncStorage.getItem('selectedProfileImageId');
+            if (savedProfileImageId) {
+                const profileImage = getProfileImageById(savedProfileImageId);
+                setSelectedProfileImage(profileImage || profileImages[0]);
+            } else {
+                setSelectedProfileImage(profileImages[0]);
+            }
+
+            // Firebase users 컬렉션에서도 확인하여 동기화
+            const userEmail = await AsyncStorage.getItem('userEmail') || 'hong@example.com';
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('email', '==', userEmail));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+
+                // Firebase의 avatar 정보로 업데이트
+                if (userData.avatar) {
+                    const avatarId = userData.avatar.replace('avatar', '');
+                    const profileImage = getProfileImageById(avatarId);
+                    if (profileImage) {
+                        setSelectedProfileImage(profileImage);
+                        await AsyncStorage.setItem('selectedProfileImageId', avatarId);
+                    }
+                }
+
+                // Firebase의 캐릭터 정보로 업데이트
+                if (userData.characterId) {
+                    const character = getCharacterById(userData.characterId);
+                    if (character) {
+                        setSelectedCharacter(character);
+                        await AsyncStorage.setItem('selectedCharacterId', userData.characterId.toString());
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('프로필 사진 불러오기 실패:', error);
+            setSelectedProfileImage(profileImages[0]);
         }
     };
 
@@ -197,7 +246,7 @@ export default function MainScreen() {
                             onPress={() => router.push('/Character-custom')}
                         >
                             <Image
-                                source={require('../assets/images/avatar1.png')}
+                                source={selectedProfileImage ? selectedProfileImage.image : profileImages[0].image}
                                 style={styles.profileImage}
                             />
                             <Text style={styles.profileName}>
