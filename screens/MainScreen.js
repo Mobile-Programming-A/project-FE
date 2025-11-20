@@ -1,9 +1,9 @@
 // screens/MainScreen.js
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
+import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import React, { useCallback, useState } from 'react';
 import {
     Dimensions,
@@ -16,25 +16,30 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-import TabScreenLayout from '../components/TabScreenLayout';
-import { characters, getCharacterById, getSelectedCharacterOrDefault, defaultCharacter, profileImages, getProfileImageById } from '../data/characters';
-import { collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../services/config';
 import MapSection from '../components/MapSection';
-
+import TabScreenLayout from '../components/TabScreenLayout';
+import { characters, defaultCharacter, getCharacterById, getProfileImageById, profileImages } from '../data/characters';
+import { db } from '../services/config';
 
 const { width } = Dimensions.get('window');
 
-// 아바타 이미지 매핑
-const avatarImages = {
-    avatar1: require('../assets/images/avatar1.png'),
-    avatar2: require('../assets/images/avatar2.png'),
-    avatar3: require('../assets/images/avatar3.png'),
-    avatar4: require('../assets/images/avatar4.png'),
-    avatar5: require('../assets/images/avatar5.png'),
-};
-export default function ExerciseScreen() {
+// 러닝 격려 메시지 배열
+const encouragingMessages = [
+    '오늘도 달려볼까요? ',
+    '한 걸음씩 나아가요! ',
+    '함께 달려요! 화이팅! ',
+    '오늘의 목표를 달성해봐요! ',
+    '러닝으로 건강해져요! ',
+    '시작이 반이에요! 가볍게 달려봐요! ',
+    '오늘도 멋진 하루를 만들어요! ',
+    '작은 발걸음이 큰 변화를 만들어요! ',
+    '지금 시작하면 후회 없을 거예요! ',
+    '러닝으로 에너지를 충전해요! ',
+    '오늘도 최선을 다해봐요! ',
+    '함께 달리면 더 즐거워요! ',
+];
+
+export default function MainScreen() {
     const router = useRouter();
     const [totalDistance, setTotalDistance] = useState(0);
     const [totalTime, setTotalTime] = useState(0);
@@ -42,7 +47,8 @@ export default function ExerciseScreen() {
     const [lastRunPath, setLastRunPath] = useState(null);
     const [selectedCharacter, setSelectedCharacter] = useState(null);
     const [selectedProfileImage, setSelectedProfileImage] = useState(null);
-    
+    const [encouragingMessage, setEncouragingMessage] = useState('');
+    const [userName, setUserName] = useState('홍길동');
 
     // 친구 목록 상태
     const [friends, setFriends] = useState([]);
@@ -50,12 +56,19 @@ export default function ExerciseScreen() {
     // 내 현재 위치
     const [myLocation, setMyLocation] = useState(null);
 
-    // 화면이 포커스될 때마다 기록 및 캐릭터 불러오기
+    // 격려 메시지 랜덤 선택
+    const getRandomMessage = () => {
+        const randomIndex = Math.floor(Math.random() * encouragingMessages.length);
+        return encouragingMessages[randomIndex];
+    };
+
+    // 화면이 포커스될 때마다 기록 및 캐릭터 불러오기, 격려 메시지 변경
     useFocusEffect(
         useCallback(() => {
             loadRecords();
             loadSelectedCharacter();
             loadSelectedProfileImage();
+            setEncouragingMessage(getRandomMessage());
             loadMyLocation();
         }, [])
     );
@@ -140,16 +153,16 @@ export default function ExerciseScreen() {
             } else {
                 setSelectedProfileImage(profileImages[0]);
             }
-            
+
             // Firebase users 컬렉션에서도 확인하여 동기화
             const userEmail = await AsyncStorage.getItem('userEmail') || 'hong@example.com';
             const usersRef = collection(db, 'users');
             const q = query(usersRef, where('email', '==', userEmail));
             const querySnapshot = await getDocs(q);
-            
+
             if (!querySnapshot.empty) {
                 const userData = querySnapshot.docs[0].data();
-                
+
                 // Firebase의 avatar 정보로 업데이트
                 if (userData.avatar) {
                     const avatarId = userData.avatar.replace('avatar', '');
@@ -159,7 +172,7 @@ export default function ExerciseScreen() {
                         await AsyncStorage.setItem('selectedProfileImageId', avatarId);
                     }
                 }
-                
+
                 // Firebase의 캐릭터 정보로 업데이트
                 if (userData.characterId) {
                     const character = getCharacterById(userData.characterId);
@@ -167,6 +180,11 @@ export default function ExerciseScreen() {
                         setSelectedCharacter(character);
                         await AsyncStorage.setItem('selectedCharacterId', userData.characterId.toString());
                     }
+                }
+
+                // Firebase의 사용자 이름 정보로 업데이트
+                if (userData.name) {
+                    setUserName(userData.name);
                 }
             }
         } catch (error) {
@@ -238,7 +256,7 @@ export default function ExerciseScreen() {
                                 style={styles.profileImage}
                             />
                             <Text style={styles.profileName}>
-                                {selectedCharacter ? selectedCharacter.name : defaultCharacter.name}
+                                {userName}
                             </Text>
                         </TouchableOpacity>
                         <View style={styles.chatBubble} />
@@ -246,6 +264,15 @@ export default function ExerciseScreen() {
 
                     {/* 3D Character Area */}
                     <View style={styles.characterContainer}>
+                        {/* 말풍선 */}
+                        <View style={styles.speechBubbleContainer}>
+                            <View style={styles.speechBubble}>
+                                <Text style={styles.speechBubbleText}>
+                                    {encouragingMessage || '오늘도 달려볼까요? 💪'}
+                                </Text>
+                            </View>
+                            <View style={styles.speechBubbleTail} />
+                        </View>
                         <Image
                             source={selectedCharacter ? selectedCharacter.image : defaultCharacter.image}
                             style={styles.character}
@@ -285,8 +312,8 @@ export default function ExerciseScreen() {
                         )}
                     </TouchableOpacity>
                 </ScrollView>
-            </SafeAreaView>
-        </TabScreenLayout>
+            </SafeAreaView >
+        </TabScreenLayout >
     );
 }
 
@@ -325,15 +352,45 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#333',
     },
-    chatBubble: {
-        width: 60,
-        height: 35,
-        backgroundColor: '#FFF',
-        borderRadius: 18,
-    },
+
     characterContainer: {
         alignItems: 'center',
         paddingVertical: 20,
+        position: 'relative',
+    },
+    speechBubbleContainer: {
+        position: 'relative',
+        marginBottom: 15,
+        alignItems: 'center',
+    },
+    speechBubble: {
+        backgroundColor: '#FFF',
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        maxWidth: width * 0.7,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    speechBubbleText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#333',
+        textAlign: 'center',
+    },
+    speechBubbleTail: {
+        width: 0,
+        height: 0,
+        borderLeftWidth: 10,
+        borderRightWidth: 10,
+        borderTopWidth: 10,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderTopColor: '#FFF',
+        marginTop: -1,
     },
     character: {
         width: 150,
