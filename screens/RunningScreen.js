@@ -1,21 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  Modal,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    Dimensions,
+    Modal,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-import TabScreenLayout from '../components/TabScreenLayout';
 
 const { width, height } = Dimensions.get('window');
 
@@ -320,8 +319,7 @@ export default function RunningScreen() {
   };
 
   return (
-    <TabScreenLayout>
-      <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
 
         {/* 헤더 */}
@@ -329,6 +327,7 @@ export default function RunningScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.replace("/main")}
+
           >
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
@@ -365,23 +364,38 @@ export default function RunningScreen() {
               showsScale={false}
               toolbarEnabled={false}
             >
-              {/* 러닝 경로 표시 */}
+              {/* 러닝 경로 표시 - 그림자 효과를 위한 배경 레이어 */}
               {pathCoords.length > 1 && (
-                <Polyline
-                  coordinates={pathCoords}
-                  strokeColor="#FF6B6B"
-                  strokeWidth={4}
-                />
+                <>
+                  <Polyline
+                    coordinates={pathCoords}
+                    strokeColor="rgba(0, 0, 0, 0.2)"
+                    strokeWidth={8}
+                    lineCap="round"
+                    lineJoin="round"
+                  />
+                  
+                  {/* 러닝 경로 - 메인 레이어 */}
+                  <Polyline
+                    coordinates={pathCoords}
+                    strokeColor="#7FD89A"
+                    strokeWidth={6}
+                    lineCap="round"
+                    lineJoin="round"
+                  />
+                </>
               )}
 
               {/* 시작점 마커 */}
               {pathCoords.length > 0 && (
                 <Marker
                   coordinate={pathCoords[0]}
-                  title="시작"
+                  anchor={{ x: 0.5, y: 0.5 }}
                 >
                   <View style={styles.startMarker}>
-                    <Ionicons name="flag" size={20} color="#FFF" />
+                    <View style={styles.startMarkerInner}>
+                      <Ionicons name="play" size={16} color="#FFFFFF" />
+                    </View>
                   </View>
                 </Marker>
               )}
@@ -526,7 +540,6 @@ export default function RunningScreen() {
           </View>
         </Modal>
       </SafeAreaView>
-    </TabScreenLayout>
   );
 }
 
@@ -603,12 +616,23 @@ const styles = StyleSheet.create({
   startMarker: {
     width: 36,
     height: 36,
-    backgroundColor: '#4CAF50',
     borderRadius: 18,
+    backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
     borderWidth: 3,
-    borderColor: '#FFF',
+    borderColor: '#FFFFFF',
+  },
+  startMarkerInner: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   infoCard: {
     backgroundColor: '#D4E9D7',

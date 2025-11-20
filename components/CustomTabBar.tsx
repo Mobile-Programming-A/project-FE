@@ -1,13 +1,11 @@
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
 import {
-  View,
-  Text,
   StyleSheet,
   TouchableOpacity,
+  View
 } from 'react-native';
-import { useRouter, usePathname } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { FontAwesome5 } from '@expo/vector-icons';
 
 export default function CustomTabBar() {
   const router = useRouter();
@@ -17,7 +15,6 @@ export default function CustomTabBar() {
 
   return (
     <View style={styles.bottomNav}>
-      
       {/* 친구 */}
       <TouchableOpacity
         style={styles.navItem}
@@ -125,5 +122,4 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 35,
   },
-
 });
