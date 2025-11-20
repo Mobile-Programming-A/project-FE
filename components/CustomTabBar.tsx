@@ -1,34 +1,30 @@
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
 import {
-  View,
-  Text,
   StyleSheet,
   TouchableOpacity,
+  View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter, usePathname } from 'expo-router';
 
 export default function CustomTabBar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // 현재 활성화된 탭 확인
-  const isActive = (route: string) => {
-    return pathname.includes(route);
-  };
+  const isActive = (route: string) => pathname.includes(route);
 
   return (
     <View style={styles.bottomNav}>
-      {/* 메인 */}
+      {/* 친구 */}
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => router.push('/(tabs)/main')}
       >
-        <View style={[styles.navIcon, isActive('main') && styles.activeNavIcon]}>
-          <Ionicons 
-            name={isActive('main') ? 'home' : 'home-outline'} 
-            size={28} 
-            color={isActive('main') ? '#FFFFFF' : '#CCCCCC'} 
+        <View style={[styles.navIcon, isActive('friends') && styles.activeNavIcon]}>
+          <Ionicons
+            name="happy-outline"
+            size={30}
+            color={isActive('friends') ? '#C6C6C6' : '#C6C6C6'}
           />
         </View>
       </TouchableOpacity>
@@ -39,41 +35,47 @@ export default function CustomTabBar() {
         onPress={() => router.push('/(tabs)/history')}
       >
         <View style={[styles.navIcon, isActive('history') && styles.activeNavIcon]}>
-          <Ionicons 
-            name={isActive('history') ? 'time' : 'time-outline'} 
-            size={28} 
-            color={isActive('history') ? '#FFFFFF' : '#CCCCCC'} 
+          <Ionicons
+            name="calendar-outline"
+            size={26}
+            color={isActive('history') ? '#C6C6C6' : '#C6C6C6'}
           />
         </View>
       </TouchableOpacity>
 
-      {/* 친구 */}
+      {/* 커뮤니티 */}
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => router.push('/(tabs)/friends')}
       >
-        <View style={[styles.navIcon, isActive('friends') && styles.activeNavIcon]}>
-          <Ionicons 
-            name={isActive('friends') ? 'people' : 'people-outline'} 
-            size={28} 
-            color={isActive('friends') ? '#FFFFFF' : '#CCCCCC'} 
+        <View style={[styles.navIcon, isActive('community') && styles.activeNavIcon]}>
+          <Ionicons
+            name="people-outline"
+            size={28}
+            color={isActive('community') ? '#C6C6C6' : '#C6C6C6'}
           />
         </View>
       </TouchableOpacity>
 
-      {/* 러닝 시작 */}
+      {/* 운동 */}
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => router.push('/(tabs)/running')}
       >
-        <View style={[styles.navIcon, styles.exerciseButton, isActive('running') && styles.activeExerciseButton]}>
-          <Ionicons 
-            name={isActive('running') ? 'play-circle' : 'play-circle-outline'} 
-            size={32} 
-            color="#FFFFFF" 
+        <View
+          style={[
+            styles.navIcon,
+            styles.exerciseButton,
+          ]}
+        >
+          <FontAwesome5
+            name="running"
+            size={28}
+            color="#fff"
           />
         </View>
       </TouchableOpacity>
+
     </View>
   );
 }
@@ -81,7 +83,7 @@ export default function CustomTabBar() {
 const styles = StyleSheet.create({
   bottomNav: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 25,
     left: 20,
     right: 20,
     height: 90,
@@ -91,6 +93,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 45,
     paddingHorizontal: 15,
+
+    // 그림자
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
   },
   navItem: {
     flex: 1,
@@ -105,15 +114,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#7A7A7A',
   },
   activeNavIcon: {
-    backgroundColor: '#7FD89A',
+    backgroundColor: '#6A6A6A',
   },
   exerciseButton: {
-    backgroundColor: '#7FD89A',
+    backgroundColor: '#71D9A1',
     width: 70,
     height: 70,
     borderRadius: 35,
-  },
-  activeExerciseButton: {
-    backgroundColor: '#6BC785',
   },
 });

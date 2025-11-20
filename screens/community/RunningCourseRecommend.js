@@ -255,7 +255,7 @@ export default function RunningCourseRecommend({ navigation }) {
           >
             <Ionicons name="chevron-back" size={28} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>러닝 코스 추천</Text>
+          <Text style={styles.headerTitle}>나의 러닝코스</Text>
           <TouchableOpacity style={styles.moreButton}>
             <Ionicons name="ellipsis-horizontal" size={28} color="#333" />
           </TouchableOpacity>
@@ -291,33 +291,8 @@ export default function RunningCourseRecommend({ navigation }) {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* 러닝 코스 등록 섹션 */}
-          <TouchableOpacity
-            style={styles.registerCard}
-            onPress={() => setModalVisible(true)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.registerLeftSection}>
-              <View style={styles.registerIconCircle}>
-                <Ionicons name="add-circle" size={32} color="#7AC943" />
-              </View>
-              <View style={styles.registerContent}>
-                <Text style={styles.registerTitle}>새 러닝 코스 등록</Text>
-                <Text style={styles.registerSubtitle}>
-                  나만의 러닝 코스를 공유해보세요
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#999" />
-          </TouchableOpacity>
-
-          {/* 러닝 코스 등록 내역 섹션 */}
+          {/* 나의 러닝 코스 섹션 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>러닝 코스 등록 내역 {">"}</Text>
-            <Text style={styles.sectionSubtitle}>
-              지금까지 등록했던 러닝 코스들이에요
-            </Text>
-
             {/* 코스 리스트 */}
             {loading ? (
               <View style={styles.loadingContainer}>
@@ -350,6 +325,7 @@ export default function RunningCourseRecommend({ navigation }) {
                     onPress={() =>
                       navigation.navigate("RunningCourseDetail", {
                         courseId: course.id,
+                        hideReviews: true,
                       })
                     }
                   >
