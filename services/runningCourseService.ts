@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   Timestamp,
   increment,
+  where,
 } from "firebase/firestore";
 import { db } from "./config";
 import { RunningCourse, NewRunningCourseInput } from "../types/runningCourse";
@@ -42,6 +43,9 @@ export const getAllCourses = async (): Promise<RunningCourse[]> => {
         description: data.description,
         isNew: data.isNew,
         likes: data.likes || 0,
+        createdBy: data.createdBy || "",
+        averageRating: data.averageRating || 0,
+        reviewCount: data.reviewCount || 0,
         createdAt:
           data.createdAt instanceof Timestamp
             ? data.createdAt.toMillis()
@@ -79,6 +83,9 @@ export const getCourseById = async (
         description: data.description,
         isNew: data.isNew,
         likes: data.likes || 0,
+        createdBy: data.createdBy || "",
+        averageRating: data.averageRating || 0,
+        reviewCount: data.reviewCount || 0,
         createdAt:
           data.createdAt instanceof Timestamp
             ? data.createdAt.toMillis()
@@ -97,7 +104,7 @@ export const getCourseById = async (
  * 새 러닝 코스 추가
  */
 export const addCourse = async (
-  courseData: NewRunningCourseInput
+  courseData: NewRunningCourseInput & { createdBy?: string }
 ): Promise<string> => {
   try {
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
@@ -111,6 +118,7 @@ export const addCourse = async (
       createdAt: serverTimestamp(),
       isNew: true, // 새로 추가된 코스 표시
       likes: 0, // 초기 좋아요 수
+      createdBy: courseData.createdBy || "", // 작성자 ID
     });
 
     return docRef.id;
@@ -209,6 +217,133 @@ export const getNewCourses = async (
     return courses.slice(0, limit);
   } catch (error) {
     console.error("Error fetching new courses:", error);
+    throw error;
+  }
+};
+
+// 리뷰 관련 타입
+export interface CourseReview {
+  id: string;
+  courseId: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: number;
+}
+
+export interface NewReviewInput {
+  courseId: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+}
+
+const REVIEWS_COLLECTION = "courseReviews";
+
+/**
+ * 코스 리뷰 가져오기
+ */
+export const getCourseReviews = async (courseId: string): Promise<CourseReview[]> => {
+  try {
+    // where만 사용하고 클라이언트에서 정렬 (복합 인덱스 불필요)
+    const q = query(
+      collection(db, REVIEWS_COLLECTION),
+      where("courseId", "==", courseId)
+    );
+    const querySnapshot = await getDocs(q);
+
+    const reviews: CourseReview[] = [];
+    querySnapshot.forEach((docSnapshot) => {
+      const data = docSnapshot.data();
+      reviews.push({
+        id: docSnapshot.id,
+        courseId: data.courseId,
+        userId: data.userId,
+        userName: data.userName,
+        rating: data.rating,
+        comment: data.comment,
+        createdAt:
+          data.createdAt instanceof Timestamp
+            ? data.createdAt.toMillis()
+            : data.createdAt,
+      });
+    });
+
+    // 클라이언트에서 최신순 정렬
+    reviews.sort((a, b) => b.createdAt - a.createdAt);
+
+    return reviews;
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    throw error;
+  }
+};
+
+/**
+ * 리뷰 추가
+ */
+export const addCourseReview = async (reviewData: NewReviewInput): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, REVIEWS_COLLECTION), {
+      courseId: reviewData.courseId,
+      userId: reviewData.userId,
+      userName: reviewData.userName,
+      rating: reviewData.rating,
+      comment: reviewData.comment,
+      createdAt: serverTimestamp(),
+    });
+
+    // 코스의 평균 별점 업데이트
+    await updateCourseAverageRating(reviewData.courseId);
+
+    return docRef.id;
+  } catch (error) {
+    console.error("Error adding review:", error);
+    throw error;
+  }
+};
+
+/**
+ * 리뷰 삭제
+ */
+export const deleteCourseReview = async (reviewId: string, courseId: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(db, REVIEWS_COLLECTION, reviewId));
+
+    // 코스의 평균 별점 업데이트
+    await updateCourseAverageRating(courseId);
+  } catch (error) {
+    console.error("Error deleting review:", error);
+    throw error;
+  }
+};
+
+/**
+ * 코스 평균 별점 업데이트
+ */
+const updateCourseAverageRating = async (courseId: string): Promise<void> => {
+  try {
+    const reviews = await getCourseReviews(courseId);
+
+    if (reviews.length === 0) {
+      await updateDoc(doc(db, COLLECTION_NAME, courseId), {
+        averageRating: 0,
+        reviewCount: 0,
+      });
+      return;
+    }
+
+    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+    const averageRating = totalRating / reviews.length;
+
+    await updateDoc(doc(db, COLLECTION_NAME, courseId), {
+      averageRating: Math.round(averageRating * 10) / 10,
+      reviewCount: reviews.length,
+    });
+  } catch (error) {
+    console.error("Error updating average rating:", error);
     throw error;
   }
 };

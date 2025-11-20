@@ -252,6 +252,130 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  // 리뷰 관련 스타일
+  reviewsContainer: {
+    marginTop: 24,
+  },
+  reviewsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  addReviewButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E8F5E0",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
+  },
+  addReviewButtonText: {
+    color: "#7AC943",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  averageRatingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  averageRatingStars: {
+    marginRight: 8,
+  },
+  averageRatingText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#333",
+    marginRight: 8,
+  },
+  reviewCountText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  emptyReviewContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 12,
+  },
+  emptyReviewText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  reviewItem: {
+    backgroundColor: "#F8F9FA",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  reviewUserInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  reviewAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#7AC943",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  reviewUserName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+  },
+  deleteReviewButton: {
+    padding: 4,
+  },
+  reviewRating: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  reviewDate: {
+    marginLeft: 8,
+    fontSize: 12,
+    color: "#999",
+  },
+  reviewComment: {
+    fontSize: 14,
+    color: "#333",
+    lineHeight: 20,
+  },
+  starContainer: {
+    flexDirection: "row",
+  },
+  starIcon: {
+    marginRight: 2,
+  },
+  ratingInputContainer: {
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 12,
+  },
+  ratingText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#666",
+  },
 });
 
 export default styles;

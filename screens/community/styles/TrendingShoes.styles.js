@@ -69,6 +69,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between", // 양쪽 끝 정렬
     alignItems: "center",
   },
+  leftButtonGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   sortSelector: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -353,6 +358,30 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  // 찜 필터 버튼
+  likeFilterButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#FF6B6B",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  likeFilterButtonActive: {
+    backgroundColor: "#FF6B6B",
+    borderColor: "#FF6B6B",
   },
   // 모달 스타일
   modalOverlay: {
