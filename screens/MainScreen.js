@@ -18,8 +18,8 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import TabScreenLayout from '../components/TabScreenLayout';
-import { characters, getCharacterById, getSelectedCharacterOrDefault, defaultCharacter } from '../data/characters';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { characters, getCharacterById, getSelectedCharacterOrDefault, defaultCharacter, profileImages, getProfileImageById } from '../data/characters';
+import { collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../services/config';
 import MapSection from '../components/MapSection';
 
@@ -41,6 +41,8 @@ export default function ExerciseScreen() {
     const [lastRunDate, setLastRunDate] = useState(null);
     const [lastRunPath, setLastRunPath] = useState(null);
     const [selectedCharacter, setSelectedCharacter] = useState(null);
+    const [selectedProfileImage, setSelectedProfileImage] = useState(null);
+    
 
     // 친구 목록 상태
     const [friends, setFriends] = useState([]);
@@ -53,6 +55,7 @@ export default function ExerciseScreen() {
         useCallback(() => {
             loadRecords();
             loadSelectedCharacter();
+            loadSelectedProfileImage();
             loadMyLocation();
         }, [])
     );
@@ -112,6 +115,7 @@ export default function ExerciseScreen() {
     // 저장된 캐릭터 불러오기
     const loadSelectedCharacter = async () => {
         try {
+            // AsyncStorage에서 먼저 확인
             const savedCharacterId = await AsyncStorage.getItem('selectedCharacterId');
             if (savedCharacterId) {
                 const character = getCharacterById(savedCharacterId);
@@ -122,6 +126,52 @@ export default function ExerciseScreen() {
         } catch (error) {
             console.error('캐릭터 불러오기 실패:', error);
             setSelectedCharacter(characters[0]);
+        }
+    };
+
+    // 저장된 프로필 사진 불러오기
+    const loadSelectedProfileImage = async () => {
+        try {
+            // AsyncStorage에서 먼저 확인
+            const savedProfileImageId = await AsyncStorage.getItem('selectedProfileImageId');
+            if (savedProfileImageId) {
+                const profileImage = getProfileImageById(savedProfileImageId);
+                setSelectedProfileImage(profileImage || profileImages[0]);
+            } else {
+                setSelectedProfileImage(profileImages[0]);
+            }
+            
+            // Firebase users 컬렉션에서도 확인하여 동기화
+            const userEmail = await AsyncStorage.getItem('userEmail') || 'hong@example.com';
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('email', '==', userEmail));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                
+                // Firebase의 avatar 정보로 업데이트
+                if (userData.avatar) {
+                    const avatarId = userData.avatar.replace('avatar', '');
+                    const profileImage = getProfileImageById(avatarId);
+                    if (profileImage) {
+                        setSelectedProfileImage(profileImage);
+                        await AsyncStorage.setItem('selectedProfileImageId', avatarId);
+                    }
+                }
+                
+                // Firebase의 캐릭터 정보로 업데이트
+                if (userData.characterId) {
+                    const character = getCharacterById(userData.characterId);
+                    if (character) {
+                        setSelectedCharacter(character);
+                        await AsyncStorage.setItem('selectedCharacterId', userData.characterId.toString());
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('프로필 사진 불러오기 실패:', error);
+            setSelectedProfileImage(profileImages[0]);
         }
     };
 
@@ -184,7 +234,7 @@ export default function ExerciseScreen() {
                             onPress={() => router.push('/Character-custom')}
                         >
                             <Image
-                                source={require('../assets/images/avatar1.png')}
+                                source={selectedProfileImage ? selectedProfileImage.image : profileImages[0].image}
                                 style={styles.profileImage}
                             />
                             <Text style={styles.profileName}>
