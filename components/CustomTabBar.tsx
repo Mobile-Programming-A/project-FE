@@ -18,7 +18,7 @@ export default function CustomTabBar() {
       {/* 친구 */}
       <TouchableOpacity
         style={styles.navItem}
-        onPress={() => router.push('/(tabs)/main')}
+        onPress={() => router.push('/(tabs)/friends')}
       >
         <View style={[styles.navIcon, isActive('friends') && styles.activeNavIcon]}>
           <Ionicons
@@ -46,7 +46,7 @@ export default function CustomTabBar() {
       {/* 커뮤니티 */}
       <TouchableOpacity
         style={styles.navItem}
-        onPress={() => router.push('/(tabs)/friends')}
+        onPress={() => router.push('/(tabs)/community')}
       >
         <View style={[styles.navIcon, isActive('community') && styles.activeNavIcon]}>
           <Ionicons
