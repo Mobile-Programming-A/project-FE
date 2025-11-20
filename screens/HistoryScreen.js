@@ -15,9 +15,8 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { BarChart } from 'react-native-chart-kit';
+import { LineChart } from 'react-native-chart-kit';
 import MapView, { Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-import TabScreenLayout from '../components/TabScreenLayout';
 
 const { width } = Dimensions.get('window');
 
@@ -51,7 +50,7 @@ export default function HistoryScreen() {
         }
     };
 
-    // 차트 데이터 업데이트
+    // 차트 데이터 업데이트 (평균 페이스 계산)
     const updateChartData = (records, period) => {
         if (records.length === 0) {
             setChartData({
@@ -63,10 +62,11 @@ export default function HistoryScreen() {
 
         let labels = [];
         let data = [];
+        let countData = []; // 각 기간별 기록 개수
 
         switch (period) {
             case '오늘':
-                // 오늘의 시간대별 데이터
+                // 오늘의 시간대별 평균 페이스
                 const today = new Date();
                 const todayRecords = records.filter(r => {
                     const recordDate = new Date(r.date);
@@ -75,18 +75,28 @@ export default function HistoryScreen() {
 
                 labels = ['아침', '점심', '저녁', '밤'];
                 data = [0, 0, 0, 0];
+                countData = [0, 0, 0, 0];
 
                 todayRecords.forEach(record => {
                     const hour = new Date(record.date).getHours();
-                    if (hour >= 6 && hour < 12) data[0] += record.distance;
-                    else if (hour >= 12 && hour < 18) data[1] += record.distance;
-                    else if (hour >= 18 && hour < 22) data[2] += record.distance;
-                    else data[3] += record.distance;
+                    let index = -1;
+                    if (hour >= 6 && hour < 12) index = 0;
+                    else if (hour >= 12 && hour < 18) index = 1;
+                    else if (hour >= 18 && hour < 22) index = 2;
+                    else index = 3;
+
+                    if (index !== -1 && record.pace && isFinite(record.pace)) {
+                        data[index] += record.pace;
+                        countData[index]++;
+                    }
                 });
+
+                // 평균 계산
+                data = data.map((sum, i) => countData[i] > 0 ? sum / countData[i] : 0);
                 break;
 
             case '주간':
-                // 주간 데이터 (최근 7일)
+                // 주간 데이터 (최근 7일 평균 페이스)
                 const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
                 const last7Days = Array.from({ length: 7 }, (_, i) => {
                     const d = new Date();
@@ -96,37 +106,52 @@ export default function HistoryScreen() {
 
                 labels = last7Days.map(d => weekDays[d.getDay()]);
                 data = new Array(7).fill(0);
+                countData = new Array(7).fill(0);
 
                 records.forEach(record => {
                     const recordDate = new Date(record.date);
                     const dayIndex = last7Days.findIndex(d =>
                         d.toDateString() === recordDate.toDateString()
                     );
-                    if (dayIndex !== -1) {
-                        data[dayIndex] += record.distance;
+                    if (dayIndex !== -1 && record.pace && isFinite(record.pace)) {
+                        data[dayIndex] += record.pace;
+                        countData[dayIndex]++;
                     }
                 });
+
+                // 평균 계산
+                data = data.map((sum, i) => countData[i] > 0 ? sum / countData[i] : 0);
                 break;
 
             case '월간':
-                // 월간 데이터 (최근 4주)
+                // 월간 데이터 (최근 4주 평균 페이스)
                 labels = ['1주', '2주', '3주', '4주'];
                 data = [0, 0, 0, 0];
+                countData = [0, 0, 0, 0];
 
                 const now = new Date();
                 records.forEach(record => {
                     const recordDate = new Date(record.date);
                     const daysDiff = Math.floor((now - recordDate) / (1000 * 60 * 60 * 24));
 
-                    if (daysDiff < 7) data[3] += record.distance;
-                    else if (daysDiff < 14) data[2] += record.distance;
-                    else if (daysDiff < 21) data[1] += record.distance;
-                    else if (daysDiff < 28) data[0] += record.distance;
+                    let weekIndex = -1;
+                    if (daysDiff < 7) weekIndex = 3;
+                    else if (daysDiff < 14) weekIndex = 2;
+                    else if (daysDiff < 21) weekIndex = 1;
+                    else if (daysDiff < 28) weekIndex = 0;
+
+                    if (weekIndex !== -1 && record.pace && isFinite(record.pace)) {
+                        data[weekIndex] += record.pace;
+                        countData[weekIndex]++;
+                    }
                 });
+
+                // 평균 계산
+                data = data.map((sum, i) => countData[i] > 0 ? sum / countData[i] : 0);
                 break;
 
             case '연간':
-                // 연간 데이터 (최근 12개월)
+                // 연간 데이터 (최근 6개월 평균 페이스)
                 const months = ['1월', '2월', '3월', '4월', '5월', '6월',
                     '7월', '8월', '9월', '10월', '11월', '12월'];
                 const currentMonth = new Date().getMonth();
@@ -137,21 +162,28 @@ export default function HistoryScreen() {
                 });
 
                 data = new Array(6).fill(0);
+                countData = new Array(6).fill(0);
 
                 records.forEach(record => {
                     const recordDate = new Date(record.date);
                     const monthsDiff = (new Date().getFullYear() - recordDate.getFullYear()) * 12
                         + (new Date().getMonth() - recordDate.getMonth());
 
-                    if (monthsDiff >= 0 && monthsDiff < 6) {
-                        data[5 - monthsDiff] += record.distance;
+                    if (monthsDiff >= 0 && monthsDiff < 6 && record.pace && isFinite(record.pace)) {
+                        const index = 5 - monthsDiff;
+                        data[index] += record.pace;
+                        countData[index]++;
                     }
                 });
+
+                // 평균 계산
+                data = data.map((sum, i) => countData[i] > 0 ? sum / countData[i] : 0);
                 break;
         }
 
-        // 소수점 2자리로 반올림
-        const roundedData = data.map(value => Math.round(value * 100) / 100);
+        // 페이스를 분:초 형식으로 변환하지 않고 그대로 사용 (초 단위)
+        // 차트에서는 초 단위로 표시하되, 최소값이 0이 되도록 조정
+        const roundedData = data.map(value => Math.round(value * 10) / 10);
 
         setChartData({
             labels,
@@ -325,105 +357,154 @@ export default function HistoryScreen() {
         </TouchableOpacity>
     );
 
-    return (
-        <TabScreenLayout>
-            <SafeAreaView style={styles.container}>
-                <StatusBar barStyle="dark-content" />
+    // 페이스를 분:초 형식으로 변환 (차트 표시용)
+    const formatPaceForChart = (seconds) => {
+        if (!seconds || !isFinite(seconds) || seconds === 0) return "0'00\"";
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}'${secs.toString().padStart(2, '0')}"`;
+    };
 
-                {/* 헤더 */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => router.back()}
-                    >
-                        <Ionicons name="chevron-back" size={24} color="#333" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>러닝 기록</Text>
-                    <TouchableOpacity style={styles.menuButton}>
-                        <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
-                    </TouchableOpacity>
+    return (
+        <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="dark-content" />
+
+            {/* 헤더 */}
+            <View style={styles.header}>
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => router.replace('/(tabs)/main')}
+                >
+                    <Ionicons name="chevron-back" size={24} color="#333" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>러닝 기록</Text>
+                <TouchableOpacity style={styles.menuButton}>
+                    <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
+                </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+                style={styles.content} 
+                showsVerticalScrollIndicator={false}
+            >
+                {/* 기간 선택 버튼 */}
+                <View style={styles.periodSelector}>
+                    {['오늘', '주간', '월간', '연간'].map((period) => (
+                        <TouchableOpacity
+                            key={period}
+                            style={[
+                                styles.periodButton,
+                                selectedPeriod === period && styles.periodButtonActive
+                            ]}
+                            onPress={() => handlePeriodSelect(period)}
+                        >
+                            <Text style={[
+                                styles.periodButtonText,
+                                selectedPeriod === period && styles.periodButtonTextActive
+                            ]}>
+                                {period}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
 
-                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                    {/* 기간 선택 버튼 */}
-                    <View style={styles.periodSelector}>
-                        {['오늘', '주간', '연간', '월간'].map((period) => (
-                            <TouchableOpacity
-                                key={period}
-                                style={[
-                                    styles.periodButton,
-                                    selectedPeriod === period && styles.periodButtonActive
-                                ]}
-                                onPress={() => handlePeriodSelect(period)}
-                            >
-                                <Text style={[
-                                    styles.periodButtonText,
-                                    selectedPeriod === period && styles.periodButtonTextActive
-                                ]}>
-                                    {period}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    {/* 차트 */}
-                    <View style={styles.chartContainer}>
+                {/* 차트 */}
+                <View style={styles.chartContainer}>
+                    <View style={styles.chartHeader}>
                         <Text style={styles.chartTitle}>평균 페이스</Text>
-                        <BarChart
+                        {chartData.datasets[0].data.length > 0 &&
+                            chartData.datasets[0].data.some(d => d > 0) && (
+                                <Text style={styles.chartSubtitle}>
+                                    {formatPaceForChart(
+                                        chartData.datasets[0].data
+                                            .filter(d => d > 0)
+                                            .reduce((a, b) => a + b, 0) /
+                                        chartData.datasets[0].data.filter(d => d > 0).length
+                                    )}
+                                </Text>
+                            )}
+                    </View>
+                    <View style={styles.chartWrapper}>
+                        <LineChart
                             data={chartData}
                             width={width - 48}
-                            height={200}
+                            height={240}
                             chartConfig={{
-                                backgroundColor: '#ffffff',
-                                backgroundGradientFrom: '#ffffff',
-                                backgroundGradientTo: '#ffffff',
-                                decimalPlaces: 2,
+                                backgroundColor: '#FFFFFF',
+                                backgroundGradientFrom: '#FFFFFF',
+                                backgroundGradientTo: '#FFFFFF',
+                                decimalPlaces: 0,
                                 color: (opacity = 1) => `rgba(127, 216, 154, ${opacity})`,
-                                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                                style: {
-                                    borderRadius: 16,
+                                labelColor: (opacity = 1) => `rgba(107, 107, 107, ${opacity})`,
+                                strokeWidth: 3,
+                                barPercentage: 0.7,
+                                useShadowColorFromDataset: false,
+                                propsForDots: {
+                                    r: '6',
+                                    strokeWidth: '2',
+                                    stroke: '#7FD89A',
+                                    fill: '#FFFFFF',
                                 },
                                 propsForBackgroundLines: {
                                     strokeDasharray: '',
-                                    stroke: '#F0F0F0',
+                                    stroke: '#E8E8E8',
+                                    strokeWidth: 1,
                                 },
                                 propsForLabels: {
-                                    fontSize: 12,
+                                    fontSize: 11,
+                                    fontWeight: '500',
+                                },
+                                formatYLabel: (value) => {
+                                    const numValue = parseFloat(value);
+                                    if (isNaN(numValue)) return '';
+                                    return formatPaceForChart(numValue);
                                 },
                             }}
                             style={styles.chart}
+                            bezier
+                            withInnerLines={true}
+                            withOuterLines={true}
+                            withVerticalLines={false}
+                            withHorizontalLines={true}
+                            withDots={true}
+                            withShadow={false}
                             fromZero={true}
-                            showBarTops={false}
-                            showValuesOnTopOfBars={true}
+                            segments={4}
                         />
                     </View>
+                </View>
 
-                    {/* 기록 목록 */}
-                    <View style={styles.recordsSection}>
-                        <View style={styles.recordsHeader}>
-                            <Text style={styles.recordsTitle}>최근 달리기</Text>
+                {/* 기록 목록 */}
+                <View style={styles.recordsSection}>
+                    <View style={styles.recordsHeader}>
+                        <Text style={styles.recordsTitle}>최근 달리기</Text>
+                        <TouchableOpacity
+                            onPress={() => {
+                                router.push('/all-records');
+                            }}
+                        >
                             <Text style={styles.recordsSubtitle}>모든 보기</Text>
-                        </View>
-
-                        {records.length === 0 ? (
-                            <View style={styles.emptyState}>
-                                <Ionicons name="fitness-outline" size={48} color="#CCC" />
-                                <Text style={styles.emptyText}>아직 러닝 기록이 없습니다</Text>
-                                <Text style={styles.emptySubtext}>첫 러닝을 시작해보세요!</Text>
-                            </View>
-                        ) : (
-                            <FlatList
-                                data={records}
-                                renderItem={renderRecordItem}
-                                keyExtractor={(item) => item.id}
-                                scrollEnabled={false}
-                                contentContainerStyle={styles.recordsList}
-                            />
-                        )}
+                        </TouchableOpacity>
                     </View>
-                </ScrollView>
-            </SafeAreaView>
-        </TabScreenLayout>
+
+                    {records.length === 0 ? (
+                        <View style={styles.emptyState}>
+                            <Ionicons name="fitness-outline" size={48} color="#CCC" />
+                            <Text style={styles.emptyText}>아직 러닝 기록이 없습니다</Text>
+                            <Text style={styles.emptySubtext}>첫 러닝을 시작해보세요!</Text>
+                        </View>
+                    ) : (
+                        <FlatList
+                            data={records.slice(0, 3)}
+                            renderItem={renderRecordItem}
+                            keyExtractor={(item) => item.id}
+                            scrollEnabled={false}
+                            contentContainerStyle={styles.recordsList}
+                        />
+                    )}
+                </View>
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
@@ -482,15 +563,38 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     chartContainer: {
-        backgroundColor: '#D4E9D7',
-        padding: 16,
-        marginTop: 8,
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: 16,
+        marginTop: 16,
+        borderRadius: 20,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    chartHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
     },
     chartTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#333',
+    },
+    chartSubtitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333',
-        marginBottom: 12,
+        color: '#7FD89A',
+    },
+    chartWrapper: {
+        borderRadius: 16,
+        overflow: 'hidden',
+        backgroundColor: '#FAFAFA',
+        paddingTop: 10,
     },
     chart: {
         marginVertical: 8,
@@ -498,9 +602,9 @@ const styles = StyleSheet.create({
     },
     recordsSection: {
         backgroundColor: '#D4E9D7',
-        marginTop: 8,
+        marginTop: 16,
         padding: 16,
-        paddingBottom: 100,
+        paddingBottom: 40,
     },
     recordsHeader: {
         flexDirection: 'row',

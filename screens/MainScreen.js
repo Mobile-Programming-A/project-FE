@@ -21,6 +21,22 @@ import { characters, defaultCharacter, getCharacterById } from '../data/characte
 
 const { width } = Dimensions.get('window');
 
+// 러닝 격려 메시지 배열
+const encouragingMessages = [
+    '오늘도 달려볼까요? ',
+    '한 걸음씩 나아가요! ',
+    '함께 달려요! 화이팅! ',
+    '오늘의 목표를 달성해봐요! ',
+    '러닝으로 건강해져요! ',
+    '시작이 반이에요! 가볍게 달려봐요! ',
+    '오늘도 멋진 하루를 만들어요! ',
+    '작은 발걸음이 큰 변화를 만들어요! ',
+    '지금 시작하면 후회 없을 거예요! ',
+    '러닝으로 에너지를 충전해요! ',
+    '오늘도 최선을 다해봐요! ',
+    '함께 달리면 더 즐거워요! ',
+];
+
 export default function MainScreen() {
     const router = useRouter();
     const [totalDistance, setTotalDistance] = useState(0);
@@ -28,12 +44,20 @@ export default function MainScreen() {
     const [lastRunDate, setLastRunDate] = useState(null);
     const [lastRunPath, setLastRunPath] = useState(null); // 최근 러닝 경로
     const [selectedCharacter, setSelectedCharacter] = useState(null);
+    const [encouragingMessage, setEncouragingMessage] = useState('');
 
-    // 화면이 포커스될 때마다 기록 및 캐릭터 불러오기
+    // 격려 메시지 랜덤 선택
+    const getRandomMessage = () => {
+        const randomIndex = Math.floor(Math.random() * encouragingMessages.length);
+        return encouragingMessages[randomIndex];
+    };
+
+    // 화면이 포커스될 때마다 기록 및 캐릭터 불러오기, 격려 메시지 변경
     useFocusEffect(
         useCallback(() => {
             loadRecords();
             loadSelectedCharacter();
+            setEncouragingMessage(getRandomMessage());
         }, [])
     );
 
@@ -137,12 +161,12 @@ export default function MainScreen() {
         const centerLat = (minLat + maxLat) / 2;
         const centerLng = (minLng + maxLng) / 2;
 
-        // Delta 계산 (약간의 여백 추가)
-        const latDelta = (maxLat - minLat) * 2.5;
-        const lngDelta = (maxLng - minLng) * 2.5;
+        // Delta 계산 (약간의 여백 추가) - 줌을 더 가깝게 하기 위해 여백 감소
+        const latDelta = (maxLat - minLat) * 1.3;
+        const lngDelta = (maxLng - minLng) * 1.3;
 
-        // 최소 delta 값 보장 (너무 확대되는 것 방지)
-        const minDelta = 0.003;
+        // 최소 delta 값 보장 (너무 확대되는 것 방지) - 더 가까운 줌을 위해 값 감소
+        const minDelta = 0.001;
 
         return {
             latitude: centerLat,
@@ -179,6 +203,15 @@ export default function MainScreen() {
 
                     {/* 3D Character Area */}
                     <View style={styles.characterContainer}>
+                        {/* 말풍선 */}
+                        <View style={styles.speechBubbleContainer}>
+                            <View style={styles.speechBubble}>
+                                <Text style={styles.speechBubbleText}>
+                                    {encouragingMessage || '오늘도 달려볼까요? 💪'}
+                                </Text>
+                            </View>
+                            <View style={styles.speechBubbleTail} />
+                        </View>
                         <Image
                             source={selectedCharacter ? selectedCharacter.image : defaultCharacter.image}
                             style={styles.character}
@@ -194,17 +227,29 @@ export default function MainScreen() {
                                     style={styles.mapView}
                                     provider={PROVIDER_GOOGLE}
                                     initialRegion={getRegionForCoordinates(lastRunPath)}
-                                    scrollEnabled={false}
-                                    zoomEnabled={false}
-                                    pitchEnabled={false}
-                                    rotateEnabled={false}
-                                    pointerEvents="none"
+                                    scrollEnabled={true}
+                                    zoomEnabled={true}
+                                    pitchEnabled={true}
+                                    rotateEnabled={true}
+                                    showsUserLocation={false}
+                                    showsMyLocationButton={false}
                                 >
-                                    {/* 러닝 경로 */}
+                                    {/* 러닝 경로 - 그림자 효과를 위한 배경 레이어 */}
+                                    <Polyline
+                                        coordinates={lastRunPath}
+                                        strokeColor="rgba(0, 0, 0, 0.2)"
+                                        strokeWidth={8}
+                                        lineCap="round"
+                                        lineJoin="round"
+                                    />
+
+                                    {/* 러닝 경로 - 메인 레이어 */}
                                     <Polyline
                                         coordinates={lastRunPath}
                                         strokeColor="#7FD89A"
-                                        strokeWidth={5}
+                                        strokeWidth={6}
+                                        lineCap="round"
+                                        lineJoin="round"
                                     />
 
                                     {/* 시작 마커 */}
@@ -213,7 +258,9 @@ export default function MainScreen() {
                                         anchor={{ x: 0.5, y: 0.5 }}
                                     >
                                         <View style={styles.startMarker}>
-                                            <Ionicons name="play-circle" size={20} color="#4CAF50" />
+                                            <View style={styles.startMarkerInner}>
+                                                <Ionicons name="play" size={16} color="#FFFFFF" />
+                                            </View>
                                         </View>
                                     </Marker>
 
@@ -223,7 +270,9 @@ export default function MainScreen() {
                                         anchor={{ x: 0.5, y: 0.5 }}
                                     >
                                         <View style={styles.endMarker}>
-                                            <Ionicons name="flag" size={20} color="#FF5252" />
+                                            <View style={styles.endMarkerInner}>
+                                                <Ionicons name="flag" size={16} color="#FFFFFF" />
+                                            </View>
                                         </View>
                                     </Marker>
                                 </MapView>
@@ -326,15 +375,45 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#333',
     },
-    chatBubble: {
-        width: 60,
-        height: 35,
-        backgroundColor: '#FFF',
-        borderRadius: 18,
-    },
+
     characterContainer: {
         alignItems: 'center',
         paddingVertical: 20,
+        position: 'relative',
+    },
+    speechBubbleContainer: {
+        position: 'relative',
+        marginBottom: 15,
+        alignItems: 'center',
+    },
+    speechBubble: {
+        backgroundColor: '#FFF',
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        maxWidth: width * 0.7,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    speechBubbleText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#333',
+        textAlign: 'center',
+    },
+    speechBubbleTail: {
+        width: 0,
+        height: 0,
+        borderLeftWidth: 10,
+        borderRightWidth: 10,
+        borderTopWidth: 10,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderTopColor: '#FFF',
+        marginTop: -1,
     },
     characterPlaceholder: {
         width: 150,
@@ -496,23 +575,45 @@ const styles = StyleSheet.create({
         resizeMode: 'contain',
     },
     startMarker: {
-        backgroundColor: '#FFF',
-        borderRadius: 16,
-        padding: 3,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#4CAF50',
+        justifyContent: 'center',
+        alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 6,
+        borderWidth: 3,
+        borderColor: '#FFFFFF',
+    },
+    startMarkerInner: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     endMarker: {
-        backgroundColor: '#FFF',
-        borderRadius: 16,
-        padding: 3,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#FF5252',
+        justifyContent: 'center',
+        alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 6,
+        borderWidth: 3,
+        borderColor: '#FFFFFF',
+    },
+    endMarkerInner: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });

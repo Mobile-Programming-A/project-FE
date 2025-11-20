@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 
 export default function CustomTabBar() {
@@ -18,39 +19,59 @@ export default function CustomTabBar() {
 
   return (
     <View style={styles.bottomNav}>
+      {/* 메인 */}
       <TouchableOpacity
         style={styles.navItem}
-        onPress={() => router.push('/(tabs)/friends')}
+        onPress={() => router.push('/(tabs)/main')}
       >
-        <View style={[styles.navIcon, isActive('friends') && styles.activeNavIcon]}>
-          <Text style={styles.navEmoji}>😊</Text>
+        <View style={[styles.navIcon, isActive('main') && styles.activeNavIcon]}>
+          <Ionicons 
+            name={isActive('main') ? 'home' : 'home-outline'} 
+            size={28} 
+            color={isActive('main') ? '#FFFFFF' : '#CCCCCC'} 
+          />
         </View>
       </TouchableOpacity>
 
+      {/* 기록 */}
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => router.push('/(tabs)/history')}
       >
         <View style={[styles.navIcon, isActive('history') && styles.activeNavIcon]}>
-          <Text style={styles.navEmoji}>📅</Text>
+          <Ionicons 
+            name={isActive('history') ? 'time' : 'time-outline'} 
+            size={28} 
+            color={isActive('history') ? '#FFFFFF' : '#CCCCCC'} 
+          />
         </View>
       </TouchableOpacity>
 
+      {/* 친구 */}
       <TouchableOpacity
         style={styles.navItem}
-        onPress={() => router.push('/(tabs)/community')}
+        onPress={() => router.push('/(tabs)/friends')}
       >
-        <View style={[styles.navIcon, isActive('community') && styles.activeNavIcon]}>
-          <Text style={styles.navEmoji}>👤</Text>
+        <View style={[styles.navIcon, isActive('friends') && styles.activeNavIcon]}>
+          <Ionicons 
+            name={isActive('friends') ? 'people' : 'people-outline'} 
+            size={28} 
+            color={isActive('friends') ? '#FFFFFF' : '#CCCCCC'} 
+          />
         </View>
       </TouchableOpacity>
 
+      {/* 러닝 시작 */}
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => router.push('/(tabs)/running')}
       >
         <View style={[styles.navIcon, styles.exerciseButton, isActive('running') && styles.activeExerciseButton]}>
-          <Text style={styles.exerciseIcon}>🏃</Text>
+          <Ionicons 
+            name={isActive('running') ? 'play-circle' : 'play-circle-outline'} 
+            size={32} 
+            color="#FFFFFF" 
+          />
         </View>
       </TouchableOpacity>
     </View>
@@ -84,10 +105,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#7A7A7A',
   },
   activeNavIcon: {
-    backgroundColor: '#6A6A6A',
-  },
-  navEmoji: {
-    fontSize: 28,
+    backgroundColor: '#7FD89A',
   },
   exerciseButton: {
     backgroundColor: '#7FD89A',
@@ -97,8 +115,5 @@ const styles = StyleSheet.create({
   },
   activeExerciseButton: {
     backgroundColor: '#6BC785',
-  },
-  exerciseIcon: {
-    fontSize: 32,
   },
 });
