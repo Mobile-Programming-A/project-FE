@@ -6,53 +6,79 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 export default function CustomTabBar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // 현재 활성화된 탭 확인
-  const isActive = (route: string) => {
-    return pathname.includes(route);
-  };
+  const isActive = (route: string) => pathname.includes(route);
 
   return (
     <View style={styles.bottomNav}>
+      
+      {/* 친구 */}
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => router.push('/(tabs)/friends')}
       >
         <View style={[styles.navIcon, isActive('friends') && styles.activeNavIcon]}>
-          <Text style={styles.navEmoji}>😊</Text>
+          <Ionicons
+            name="happy-outline"
+            size={30}
+            color={isActive('friends') ? '#C6C6C6' : '#C6C6C6'}
+          />
         </View>
       </TouchableOpacity>
 
+      {/* 기록 */}
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => router.push('/(tabs)/history')}
       >
         <View style={[styles.navIcon, isActive('history') && styles.activeNavIcon]}>
-          <Text style={styles.navEmoji}>📅</Text>
+          <Ionicons
+            name="calendar-outline"
+            size={26}
+            color={isActive('history') ? '#C6C6C6' : '#C6C6C6'}
+          />
         </View>
       </TouchableOpacity>
 
+      {/* 커뮤니티 */}
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => router.push('/(tabs)/community')}
       >
         <View style={[styles.navIcon, isActive('community') && styles.activeNavIcon]}>
-          <Text style={styles.navEmoji}>👤</Text>
+          <Ionicons
+            name="people-outline"
+            size={28}
+            color={isActive('community') ? '#C6C6C6' : '#C6C6C6'}
+          />
         </View>
       </TouchableOpacity>
 
+      {/* 운동 */}
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => router.push('/(tabs)/running')}
       >
-        <View style={[styles.navIcon, styles.exerciseButton, isActive('running') && styles.activeExerciseButton]}>
-          <Text style={styles.exerciseIcon}>🏃</Text>
+        <View
+          style={[
+            styles.navIcon,
+            styles.exerciseButton,
+          ]}
+        >
+          <FontAwesome5
+            name="running"
+            size={28}
+            color="#fff"
+          />
         </View>
       </TouchableOpacity>
+
     </View>
   );
 }
@@ -60,7 +86,7 @@ export default function CustomTabBar() {
 const styles = StyleSheet.create({
   bottomNav: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 25,
     left: 20,
     right: 20,
     height: 90,
@@ -70,6 +96,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 45,
     paddingHorizontal: 15,
+
+    // 그림자
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
   },
   navItem: {
     flex: 1,
@@ -86,19 +119,11 @@ const styles = StyleSheet.create({
   activeNavIcon: {
     backgroundColor: '#6A6A6A',
   },
-  navEmoji: {
-    fontSize: 28,
-  },
   exerciseButton: {
-    backgroundColor: '#7FD89A',
+    backgroundColor: '#71D9A1',
     width: 70,
     height: 70,
     borderRadius: 35,
   },
-  activeExerciseButton: {
-    backgroundColor: '#6BC785',
-  },
-  exerciseIcon: {
-    fontSize: 32,
-  },
+
 });

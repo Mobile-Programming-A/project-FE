@@ -61,8 +61,8 @@ export default function CommunityMain({ navigation }) {
               </View>
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>러닝 코스 추천하고</Text>
-              <Text style={styles.menuSubtitle}>꾸미기 아이템 받기</Text>
+              <Text style={styles.menuTitle}>나의 러닝코스</Text>
+              <Text style={styles.menuSubtitle}>내가 등록한 러닝코스 목록</Text>
             </View>
             <Ionicons name="chevron-forward" size={24} color="#999" />
           </TouchableOpacity>
