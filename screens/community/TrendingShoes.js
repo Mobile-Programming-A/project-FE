@@ -65,6 +65,7 @@ export default function TrendingShoes({ navigation }) {
   const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showLikedOnly, setShowLikedOnly] = useState(false); // 찜한 목록만 보기
 
   // Firestore에서 신발 데이터 불러오기
   useEffect(() => {
@@ -86,9 +87,14 @@ export default function TrendingShoes({ navigation }) {
   useEffect(() => {
     let filtered = shoes;
 
+    // 찜한 목록 필터링
+    if (showLikedOnly) {
+      filtered = filtered.filter((shoe) => likedShoes[shoe.id]);
+    }
+
     // 검색 필터링
     if (searchText.trim() !== "") {
-      filtered = shoes.filter(
+      filtered = filtered.filter(
         (shoe) =>
           shoe.brand?.toLowerCase().includes(searchText.toLowerCase()) ||
           shoe.model?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -117,7 +123,7 @@ export default function TrendingShoes({ navigation }) {
     }
 
     setFilteredShoes(sorted);
-  }, [searchText, shoes, sortBy]);
+  }, [searchText, shoes, sortBy, showLikedOnly, likedShoes]);
 
   const loadShoes = async () => {
     try {
@@ -342,15 +348,33 @@ export default function TrendingShoes({ navigation }) {
           )}
         </View>
 
-        {/* 신발 추가 버튼 & 정렬 드롭다운 */}
+        {/* 신발 추가 버튼 & 찜 필터 & 정렬 드롭다운 */}
         <View style={styles.sortContainer}>
-          {/* 신발 추가 버튼 - 왼쪽 */}
-          <TouchableOpacity
-            style={styles.addShoeButton}
-            onPress={() => setModalVisible(true)}
-          >
-            <Ionicons name="add-circle-outline" size={23} color="#fff" />
-          </TouchableOpacity>
+          {/* 왼쪽 버튼 그룹 */}
+          <View style={styles.leftButtonGroup}>
+            {/* 신발 추가 버튼 */}
+            <TouchableOpacity
+              style={styles.addShoeButton}
+              onPress={() => setModalVisible(true)}
+            >
+              <Ionicons name="add-circle-outline" size={23} color="#fff" />
+            </TouchableOpacity>
+
+            {/* 찜 필터 버튼 */}
+            <TouchableOpacity
+              style={[
+                styles.likeFilterButton,
+                !showLikedOnly && styles.likeFilterButtonActive,
+              ]}
+              onPress={() => setShowLikedOnly(!showLikedOnly)}
+            >
+              <Ionicons
+                name={showLikedOnly ? "heart" : "heart-outline"}
+                size={20}
+                color={!showLikedOnly ? "#fff" : "#FF6B6B"}
+              />
+            </TouchableOpacity>
+          </View>
 
           {/* 정렬 드롭다운 - 오른쪽 */}
           <TouchableOpacity

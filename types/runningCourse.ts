@@ -16,6 +16,9 @@ export interface RunningCourse {
   userId?: string;
   isNew?: boolean; // 새로 추가된 코스 표시용
   likes?: number; // 좋아요 수
+  createdBy?: string; // 작성자 ID
+  averageRating?: number; // 평균 별점
+  reviewCount?: number; // 리뷰 개수
 }
 
 export interface NewRunningCourseInput {
