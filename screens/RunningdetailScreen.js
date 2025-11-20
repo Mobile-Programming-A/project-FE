@@ -100,7 +100,7 @@ export default function RunningDetailScreen({ route }) {
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => router.push('/(tabs)/main')}
+                        onPress={() => router.back()}
                     >
                         <Ionicons name="chevron-back" size={24} color="#333" />
                     </TouchableOpacity>
