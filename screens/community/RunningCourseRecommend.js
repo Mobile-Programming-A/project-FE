@@ -16,6 +16,9 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import { useFocusEffect } from "@react-navigation/native";
 import styles from "./styles/RunningCourseRecommend.styles";
 import { getAllCourses, addCourse } from "../../services/runningCourseService";
+import { LinearGradient } from "expo-linear-gradient";
+import { StyleSheet } from "react-native";
+
 
 export default function RunningCourseRecommend({ navigation }) {
   const [courses, setCourses] = useState([]);
@@ -242,10 +245,17 @@ export default function RunningCourseRecommend({ navigation }) {
     }
   };
 
-  return (
-    <View style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+ return (
+  <View style={{ flex: 1 }}>
+
+    {/* 그라데이션 배경 */}
+    <LinearGradient
+      colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+      style={{ ...StyleSheet.absoluteFillObject }}
+    />
+
+    <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
+      <StatusBar barStyle="dark-content" />
 
         {/* 헤더 */}
         <View style={styles.header}>
@@ -253,11 +263,11 @@ export default function RunningCourseRecommend({ navigation }) {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back" size={28} color="#333" />
+            <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>나의 러닝코스</Text>
           <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-horizontal" size={28} color="#333" />
+            <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
           </TouchableOpacity>
         </View>
 
@@ -296,7 +306,7 @@ export default function RunningCourseRecommend({ navigation }) {
             {/* 코스 리스트 */}
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#7AC943" />
+                <ActivityIndicator size="large" color="#71D9A1" />
                 <Text style={styles.loadingText}>로딩 중...</Text>
               </View>
             ) : filteredCourses.length === 0 ? (
@@ -353,7 +363,7 @@ export default function RunningCourseRecommend({ navigation }) {
                         >
                           <Marker
                             coordinate={course.startLocation}
-                            pinColor="#7AC943"
+                            pinColor="#71D9A1"
                             title="시작"
                           />
                           <Marker
@@ -373,7 +383,7 @@ export default function RunningCourseRecommend({ navigation }) {
                           course.routeCoordinates.length > 0 ? (
                             <Polyline
                               coordinates={course.routeCoordinates}
-                              strokeColor="#7AC943"
+                              strokeColor="#71D9A1"
                               strokeWidth={4}
                               lineCap="round"
                               lineJoin="round"
@@ -384,7 +394,7 @@ export default function RunningCourseRecommend({ navigation }) {
                                 course.startLocation,
                                 course.endLocation,
                               ]}
-                              strokeColor="#7AC943"
+                              strokeColor="#71D9A1"
                               strokeWidth={3}
                               strokePattern={[1, 1]}
                             />
@@ -392,7 +402,7 @@ export default function RunningCourseRecommend({ navigation }) {
                         </MapView>
                       ) : (
                         <View style={styles.mapPlaceholder}>
-                          <Ionicons name="location" size={40} color="#7AC943" />
+                          <Ionicons name="location" size={40} color="#71D9A1" />
                         </View>
                       )}
                     </View>
@@ -402,7 +412,7 @@ export default function RunningCourseRecommend({ navigation }) {
                       <Text style={styles.courseName}>{course.name}</Text>
                       <View style={styles.courseStats}>
                         <View style={styles.statItem}>
-                          <Ionicons name="navigate" size={16} color="#7AC943" />
+                          <Ionicons name="navigate" size={16} color="#71D9A1" />
                           <Text style={styles.statValue}>
                             {course.distance}
                           </Text>
@@ -452,7 +462,7 @@ export default function RunningCourseRecommend({ navigation }) {
                     {newCourse.startLocation && (
                       <Marker
                         coordinate={newCourse.startLocation}
-                        pinColor="#7AC943"
+                        pinColor="#71D9A1"
                         title="시작 위치"
                       />
                     )}
@@ -475,7 +485,7 @@ export default function RunningCourseRecommend({ navigation }) {
                     newCourse.routeCoordinates.length > 0 ? (
                       <Polyline
                         coordinates={newCourse.routeCoordinates}
-                        strokeColor="#7AC943"
+                        strokeColor="#71D9A1"
                         strokeWidth={4}
                         lineCap="round"
                         lineJoin="round"
@@ -510,7 +520,7 @@ export default function RunningCourseRecommend({ navigation }) {
                         name="play-circle"
                         size={20}
                         color={
-                          selectingLocation === "start" ? "#fff" : "#7AC943"
+                          selectingLocation === "start" ? "#fff" : "#71D9A1"
                         }
                       />
                       <Text
@@ -612,7 +622,7 @@ export default function RunningCourseRecommend({ navigation }) {
                   <Text style={styles.mapHint}>
                     {loadingRoute ? (
                       <View style={styles.loadingRouteContainer}>
-                        <ActivityIndicator size="small" color="#7AC943" />
+                        <ActivityIndicator size="small" color="#71D9A1" />
                         <Text style={styles.loadingRouteText}>
                           경로를 계산하는 중...
                         </Text>

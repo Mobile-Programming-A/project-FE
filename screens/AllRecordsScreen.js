@@ -133,7 +133,7 @@ export default function AllRecordsScreen() {
                     >
                         <Polyline
                             coordinates={item.pathCoords}
-                            strokeColor="#7FD89A"
+                            strokeColor="#71D9A1"
                             strokeWidth={3}
                         />
                     </MapView>
@@ -157,7 +157,7 @@ export default function AllRecordsScreen() {
                         <Text style={styles.recordCardStatText}>{item.calories || 0}kcal</Text>
                     </View>
                     <View style={styles.recordCardStat}>
-                        <Ionicons name="walk" size={14} color="#7FD89A" />
+                        <Ionicons name="walk" size={14} color="#71D9A1" />
                         <Text style={styles.recordCardStatText}>{item.distance.toFixed(2)}km</Text>
                     </View>
                     <View style={styles.recordCardStat}>
@@ -207,7 +207,7 @@ export default function AllRecordsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#D4E9D7',
+        //backgroundColor: '#D4E9D7',
     },
     header: {
         flexDirection: 'row',
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#D4E9D7',
+        //backgroundColor: '#D4E9D7',
     },
     backButton: {
         padding: 4,

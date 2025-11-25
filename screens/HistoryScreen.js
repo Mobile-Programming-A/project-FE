@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import { useCallback, useState } from 'react';
 import {
     Alert,
@@ -321,7 +323,7 @@ export default function HistoryScreen() {
                     >
                         <Polyline
                             coordinates={item.pathCoords}
-                            strokeColor="#7FD89A"
+                            strokeColor="#71D9A1"
                             strokeWidth={3}
                         />
                     </MapView>
@@ -345,7 +347,7 @@ export default function HistoryScreen() {
                         <Text style={styles.recordCardStatText}>{item.calories || 0}kcal</Text>
                     </View>
                     <View style={styles.recordCardStat}>
-                        <Ionicons name="walk" size={14} color="#7FD89A" />
+                        <Ionicons name="walk" size={14} color="#71D9A1" />
                         <Text style={styles.recordCardStatText}>{item.distance.toFixed(2)}km</Text>
                     </View>
                     <View style={styles.recordCardStat}>
@@ -366,6 +368,10 @@ export default function HistoryScreen() {
     };
 
     return (
+    <LinearGradient
+        colors={['#B8E6F0', '#C8EDD4', '#D4E9D7']}
+        style={{ flex: 1 }}
+    >
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
 
@@ -442,7 +448,7 @@ export default function HistoryScreen() {
                                 propsForDots: {
                                     r: '6',
                                     strokeWidth: '2',
-                                    stroke: '#7FD89A',
+                                    stroke: '#71D9A1',
                                     fill: '#FFFFFF',
                                 },
                                 propsForBackgroundLines: {
@@ -489,7 +495,7 @@ export default function HistoryScreen() {
 
                     {records.length === 0 ? (
                         <View style={styles.emptyState}>
-                            <Ionicons name="fitness-outline" size={48} color="#CCC" />
+                            <Ionicons name="fitness-outline" size={48} color="#999" />
                             <Text style={styles.emptyText}>아직 러닝 기록이 없습니다</Text>
                             <Text style={styles.emptySubtext}>첫 러닝을 시작해보세요!</Text>
                         </View>
@@ -505,13 +511,14 @@ export default function HistoryScreen() {
                 </View>
             </ScrollView>
         </SafeAreaView>
+        </LinearGradient>  
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#D4E9D7',
+        
     },
     header: {
         flexDirection: 'row',
@@ -519,7 +526,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#D4E9D7',
+        
     },
     backButton: {
         padding: 4,
@@ -539,7 +546,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 16,
         paddingVertical: 16,
-        backgroundColor: '#D4E9D7',
+        
         gap: 8,
     },
     periodButton: {
@@ -551,7 +558,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     periodButtonActive: {
-        backgroundColor: '#7FD89A',
+        backgroundColor: '#71D9A1',
     },
     periodButtonText: {
         fontSize: 13,
@@ -588,7 +595,7 @@ const styles = StyleSheet.create({
     chartSubtitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#7FD89A',
+        color: '#71D9A1',
     },
     chartWrapper: {
         borderRadius: 16,
@@ -601,7 +608,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
     },
     recordsSection: {
-        backgroundColor: '#D4E9D7',
+        
         marginTop: 16,
         padding: 16,
         paddingBottom: 40,
@@ -619,7 +626,7 @@ const styles = StyleSheet.create({
     },
     recordsSubtitle: {
         fontSize: 14,
-        color: '#7FD89A',
+        color: '#999',
     },
     recordsList: {
         gap: 12,

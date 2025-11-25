@@ -18,6 +18,8 @@ import {
   toggleShoeLike,
 } from "../../services/shoesService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+
 
 export default function TrendingShoesDetails({ navigation, route }) {
   const { shoeId } = route.params;
@@ -103,7 +105,7 @@ export default function TrendingShoesDetails({ navigation, route }) {
         <SafeAreaView style={styles.container}>
           <StatusBar barStyle="dark-content" />
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#7AC943" />
+            <ActivityIndicator size="large" color="#71D9A1" />
             <Text style={styles.loadingText}>신발 정보를 불러오는 중...</Text>
           </View>
         </SafeAreaView>
@@ -117,7 +119,19 @@ export default function TrendingShoesDetails({ navigation, route }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container}>
+      <LinearGradient
+            colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+            locations={[0, 0.16, 1]}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+<SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
+
         <StatusBar barStyle="dark-content" />
 
         {/* 헤더 */}
@@ -126,7 +140,7 @@ export default function TrendingShoesDetails({ navigation, route }) {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back" size={28} color="#333" />
+            <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>러닝화 상세</Text>
           <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>

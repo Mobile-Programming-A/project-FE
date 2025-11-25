@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 
 import { useRouter } from 'expo-router';
 import { defaultCharacter } from '../data/characters';
@@ -21,44 +22,68 @@ WebBrowser.maybeCompleteAuthSession();
 
 const { width, height } = Dimensions.get('window');
 
+
+// 잔디 벡터 컴포넌트 추가
+const GrassVector = ({ left, bottom, rotation = 0, scale = 1 }) => (
+    <View
+        style={[
+            styles.grassVector,
+            {
+                left,
+                bottom,
+                transform: [
+                    { rotate: `${rotation}deg` },
+                    { scale }
+                ]
+            }
+        ]}
+    >
+        <Svg width="25" height="25" viewBox="0 0 25 25">
+            <Path
+                d="M 10 25 Q 8 18 5 10 Q 4 8 5 7 Q 6 6 7 8 Q 10 15 12 22"
+                fill="#8BAF4C"
+                opacity={0.5}
+            />
+            <Path
+                d="M 15 25 Q 14 16 12 8 Q 11.5 5 13 4 Q 14.5 3 15 6 Q 17 14 16 22"
+                fill="#9BC25C"
+                opacity={0.6}
+            />
+            <Path
+                d="M 20 25 Q 22 18 25 10 Q 26 8 25 7 Q 24 6 23 8 Q 20 15 18 22"
+                fill="#7A9E3B"
+                opacity={0.5}
+            />
+        </Svg>
+    </View>
+);
+
 export default function LoginScreen() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
-    
-    // Google 인증 요청 - iOS와 웹 클라이언트 ID 설정
-
     const [request, response, promptAsync] = Google.useAuthRequest({
-  androidClientId: "656771928173-okuhoa8ugjk5h1hc9ln2hoig94j0.apps.googleusercontent.com",
-  iosClientId: "656771928173-okuhoa8ugjk5h1hc9ln2hoig94j0.apps.googleusercontent.com",
-  webClientId: "656771928173-3tdf4229ete02t5rkvvt7gmubcoh8e2.apps.googleusercontent.com",
-  redirectUri: "https://auth.expo.io/@seojung024/RunningApp",
-  scopes: ["profile", "email"],
-});
+        androidClientId: "656771928173-okuhoa8ugjk5h1hc9ln2hoig94j0.apps.googleusercontent.com",
+        iosClientId: "656771928173-okuhoa8ugjk5h1hc9ln2hoig94j0.apps.googleusercontent.com",
+        webClientId: "656771928173-3tdf4229ete02t5rkvvt7gmubcoh8e2.apps.googleusercontent.com",
+        redirectUri: "https://auth.expo.io/@seojung024/RunningApp",
+        scopes: ["profile", "email"],
+    });
 
-
-    // 인증 응답 처리
     useEffect(() => {
-        console.log('🔍 OAuth Response:', JSON.stringify(response, null, 2));
-
         if (response?.type === 'success') {
-            console.log('✅ 로그인 성공!');
             const { authentication } = response;
             handleGoogleLoginSuccess(authentication);
         } else if (response?.type === 'error') {
-            console.error('❌ 로그인 오류:', response.error);
-            Alert.alert('로그인 실패', `구글 로그인 중 오류가 발생했습니다.\n${response.error?.message || ''}`);
+            Alert.alert('로그인 실패', response.error?.message || '');
             setIsLoading(false);
-        } else if (response?.type === 'dismiss' || response?.type === 'cancel') {
-            console.log('⚠️ 로그인 취소됨');
+        } else if (response?.type === 'dismiss') {
             setIsLoading(false);
         }
     }, [response]);
 
-    // 구글 로그인 성공 처리
     const handleGoogleLoginSuccess = async (authentication) => {
         try {
-            // 사용자 정보 가져오기
             const userInfoResponse = await fetch(
                 'https://www.googleapis.com/oauth2/v2/userinfo',
                 {
@@ -67,53 +92,50 @@ export default function LoginScreen() {
             );
 
             const userInfo = await userInfoResponse.json();
-            console.log('사용자 정보:', userInfo);
 
-            // 로그인 성공 - 메인 화면으로 이동
             Alert.alert(
                 '로그인 성공',
                 `환영합니다, ${userInfo.name}님!`,
-                [
-                    {
-                        text: '확인',
-                        onPress: () => router.replace('/(tabs)/main')
-                    }
-                ]
+                [{ text: '확인', onPress: () => router.replace('/(tabs)/main') }]
             );
         } catch (error) {
-            console.error('사용자 정보 가져오기 실패:', error);
             Alert.alert('오류', '사용자 정보를 가져오는데 실패했습니다.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    // 구글 로그인 버튼 클릭
     const handleGoogleLogin = async () => {
         setIsLoading(true);
-        try {
-            await promptAsync();
-        } catch (error) {
-            console.error('구글 로그인 오류:', error);
-            Alert.alert('오류', '구글 로그인을 시작할 수 없습니다.');
-            setIsLoading(false);
-        }
+        await promptAsync();
     };
 
     const handleStartPress = () => {
-        console.log('시작하기 버튼 클릭! 메인 화면으로 이동합니다.');
         router.replace('/(tabs)/main');
     };
 
     return (
         <View style={styles.container}>
+
+            {/*  배경-그라데이션 */}
             <LinearGradient
-                colors={['#D4F7C5', '#F0FDEF']}
+                colors={['#B8E6F0', '#C8EDD4', '#D4E9D7']}
+                locations={[0, 0.4, 1]}
                 style={StyleSheet.absoluteFillObject}
             />
 
+            
             <View style={styles.ellipseBackground} />
 
+            {/*  잔디 벡터 배치 */}
+            <GrassVector left={30} bottom={height * 0.32} rotation={-15} scale={1.1} />
+            <GrassVector left={10} bottom={height * 0.38} rotation={7} scale={1.09} />
+            <GrassVector left={90} bottom={height * 0.50} rotation={5} scale={0.9} />
+            <GrassVector left={width - 120} bottom={height * 0.41} rotation={10} scale={1.0} />
+            <GrassVector left={width - 60} bottom={height * 0.39} rotation={-8} scale={0.95} />
+            <GrassVector left={width / 2 - 40} bottom={height * 0.43} rotation={-5} scale={1.05} />
+
+            {/* 상단 캐릭터 영역 */}
             <View style={styles.topContainer}>
                 <Image
                     source={defaultCharacter.image}
@@ -122,8 +144,8 @@ export default function LoginScreen() {
                 <Text style={styles.subtitle}>망키와 함께 달려보세요!</Text>
             </View>
 
+            {/* 버튼 영역 */}
             <View style={styles.bottomContainer}>
-                {/* 구글 로그인 버튼 */}
                 <TouchableOpacity
                     style={styles.googleButton}
                     onPress={handleGoogleLogin}
@@ -139,14 +161,12 @@ export default function LoginScreen() {
                     )}
                 </TouchableOpacity>
 
-                {/* 또는 구분선 */}
                 <View style={styles.dividerContainer}>
                     <View style={styles.divider} />
                     <Text style={styles.dividerText}>또는</Text>
                     <View style={styles.divider} />
                 </View>
 
-                {/* 시작하기 버튼 */}
                 <TouchableOpacity
                     style={styles.kakaoButton}
                     onPress={handleStartPress}
@@ -158,7 +178,7 @@ export default function LoginScreen() {
     );
 }
 
-// ... (styles는 동일) ...
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -166,18 +186,22 @@ const styles = StyleSheet.create({
     ellipseBackground: {
         position: 'absolute',
         bottom: -height * 0.1,
-        left: -width * 0.3,
-        right: -width * 0.3,
-        height: height * 0.7,
+        left: -width * 0.33,
+        right: -width * 0.33,
+        height: height * 0.68,
         backgroundColor: '#C2D88B',
-        borderRadius: width * 1.5,
+        borderRadius: width * 2,
+    },
+    grassVector: {
+        position: 'absolute',
+        opacity: 0.95,
     },
     topContainer: {
         flex: 2,
         justifyContent: 'center',
         alignItems: 'center',
         paddingTop: 80,
-        zIndex: 1,
+        zIndex: 2,
     },
     character: {
         width: width * 0.6,
@@ -213,7 +237,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     googleButtonText: {
-        color: '#3C1E1E',
+        color: '#333',
         fontSize: 16,
         fontWeight: '600',
     },
@@ -226,12 +250,12 @@ const styles = StyleSheet.create({
     divider: {
         flex: 1,
         height: 1,
-        backgroundColor: '#CCCCCC',
+        backgroundColor: '#ffffffff',
     },
     dividerText: {
         marginHorizontal: 16,
         fontSize: 14,
-        color: '#666666',
+        color: '#666',
     },
     kakaoButton: {
         backgroundColor: '#FFFFFF',
@@ -247,7 +271,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     kakaoButtonText: {
-        color: '#3C1E1E',
+        color: '#333',
         fontSize: 16,
         fontWeight: '600',
     },

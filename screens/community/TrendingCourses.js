@@ -11,9 +11,11 @@ import {
   Modal,
   Alert,
   Animated,
+
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker, Polyline } from "react-native-maps";
+import { LinearGradient } from "expo-linear-gradient";
 import styles from "./styles/TrendingCourses.styles";
 import {
   getAllCourses,
@@ -21,6 +23,8 @@ import {
   addCourse,
 } from "../../services/runningCourseService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { StyleSheet } from "react-native";
+
 
 // 임시 사용자 ID (실제로는 인증 시스템에서 가져와야 함)
 const CURRENT_USER_ID = "currentUser";
@@ -388,7 +392,13 @@ export default function TrendingCourses({ navigation }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container}>
+       <LinearGradient
+        colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      
+      <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
         <StatusBar barStyle="dark-content" />
 
         {/* 헤더 */}
@@ -397,11 +407,11 @@ export default function TrendingCourses({ navigation }) {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back" size={28} color="#333" />
+            <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>지금 뜨는 러닝코스</Text>
           <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-horizontal" size={28} color="#333" />
+            <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
           </TouchableOpacity>
         </View>
 
@@ -438,7 +448,7 @@ export default function TrendingCourses({ navigation }) {
         >
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#7AC943" />
+              <ActivityIndicator size="large" color="#71D9A1" />
               <Text style={styles.loadingText}>로딩 중...</Text>
             </View>
           ) : filteredCourses.length === 0 ? (
@@ -515,7 +525,7 @@ export default function TrendingCourses({ navigation }) {
                         >
                           <Marker
                             coordinate={course.startLocation}
-                            pinColor="#7AC943"
+                            pinColor="#71D9A1"
                             title="시작"
                           />
                           <Marker
@@ -535,7 +545,7 @@ export default function TrendingCourses({ navigation }) {
                           course.routeCoordinates.length > 0 ? (
                             <Polyline
                               coordinates={course.routeCoordinates}
-                              strokeColor="#7AC943"
+                              strokeColor="#71D9A1"
                               strokeWidth={4}
                               lineCap="round"
                               lineJoin="round"
@@ -546,7 +556,7 @@ export default function TrendingCourses({ navigation }) {
                                 course.startLocation,
                                 course.endLocation,
                               ]}
-                              strokeColor="#7AC943"
+                              strokeColor="#71D9A1"
                               strokeWidth={3}
                               strokePattern={[1, 1]}
                             />
@@ -554,7 +564,7 @@ export default function TrendingCourses({ navigation }) {
                         </MapView>
                       ) : (
                         <View style={styles.mapPlaceholder}>
-                          <Ionicons name="location" size={40} color="#7AC943" />
+                          <Ionicons name="location" size={40} color="#71D9A1" />
                         </View>
                       )}
                     </View>
@@ -567,7 +577,7 @@ export default function TrendingCourses({ navigation }) {
 
                       <View style={styles.courseStats}>
                         <View style={styles.statItem}>
-                          <Ionicons name="navigate" size={16} color="#7AC943" />
+                          <Ionicons name="navigate" size={16} color="#71D9A1" />
                           <Text style={styles.statValue}>
                             {course.distance}
                           </Text>
@@ -709,7 +719,7 @@ export default function TrendingCourses({ navigation }) {
                     {newCourse.startLocation && (
                       <Marker
                         coordinate={newCourse.startLocation}
-                        pinColor="#7AC943"
+                        pinColor="#71D9A1"
                         title="시작 위치"
                       />
                     )}
@@ -734,7 +744,7 @@ export default function TrendingCourses({ navigation }) {
                     newCourse.routeCoordinates.length > 0 ? (
                       <Polyline
                         coordinates={newCourse.routeCoordinates}
-                        strokeColor="#7AC943"
+                        strokeColor="#71D9A1"
                         strokeWidth={4}
                         lineCap="round"
                         lineJoin="round"
@@ -769,7 +779,7 @@ export default function TrendingCourses({ navigation }) {
                         name="play-circle"
                         size={20}
                         color={
-                          selectingLocation === "start" ? "#fff" : "#7AC943"
+                          selectingLocation === "start" ? "#fff" : "#71D9A1"
                         }
                       />
                       <Text
@@ -872,7 +882,7 @@ export default function TrendingCourses({ navigation }) {
                   <Text style={styles.mapHint}>
                     {loadingRoute ? (
                       <View style={styles.loadingRouteContainer}>
-                        <ActivityIndicator size="small" color="#7AC943" />
+                        <ActivityIndicator size="small" color="#71D9A1" />
                         <Text style={styles.loadingRouteText}>
                           경로를 계산하는 중...
                         </Text>
