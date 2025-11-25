@@ -10,6 +10,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { LinearGradient } from "expo-linear-gradient";
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import TabScreenLayout from '../components/TabScreenLayout';
 
@@ -93,8 +94,12 @@ export default function RunningDetailScreen({ route }) {
 
     return (
         <TabScreenLayout>
-            <SafeAreaView style={styles.container}>
-                <StatusBar barStyle="dark-content" />
+            <LinearGradient
+                    colors={['#B8E6F0', '#C8EDD4', '#D4E9D7']}
+                    style={{ flex: 1 }}
+                >
+                    <SafeAreaView style={styles.container}>
+                        <StatusBar barStyle="dark-content" />
 
                 {/* 헤더 */}
                 <View style={styles.header}>
@@ -132,7 +137,7 @@ export default function RunningDetailScreen({ route }) {
                                 {/* 러닝 경로 */}
                                 <Polyline
                                     coordinates={record.pathCoords}
-                                    strokeColor="#7FD89A"
+                                    strokeColor="#71D9A1"
                                     strokeWidth={4}
                                 />
 
@@ -166,7 +171,7 @@ export default function RunningDetailScreen({ route }) {
                     {/* 메인 거리 카드 */}
                     <View style={styles.mainStatCard}>
                         <View style={styles.mainStatIcon}>
-                            <Ionicons name="navigate" size={32} color="#7FD89A" />
+                            <Ionicons name="navigate" size={32} color="#71D9A1" />
                         </View>
                         <Text style={styles.mainStatLabel}>고래가 좋은 세부</Text>
                         <Text style={styles.mainStatValue}>{record.distance.toFixed(2)}km</Text>
@@ -197,7 +202,7 @@ export default function RunningDetailScreen({ route }) {
                     <View style={styles.infoCards}>
                         <View style={styles.infoCard}>
                             <View style={styles.infoCardHeader}>
-                                <Ionicons name="timer-outline" size={20} color="#7FD89A" />
+                                <Ionicons name="walk-outline" size={20} color="#71D9A1" />
                                 <Text style={styles.infoCardTitle}>거리</Text>
                             </View>
                             <Text style={styles.infoCardValue}>{record.distance.toFixed(2)}km</Text>
@@ -205,7 +210,7 @@ export default function RunningDetailScreen({ route }) {
 
                         <View style={styles.infoCard}>
                             <View style={styles.infoCardHeader}>
-                                <Ionicons name="flame-outline" size={20} color="#FF6B6B" />
+                                <Ionicons name="flame-outline" size={20} color="#FF8C00" />
                                 <Text style={styles.infoCardTitle}>칼로리</Text>
                             </View>
                             <Text style={styles.infoCardValue}>{record.calories || 0}kcal</Text>
@@ -222,13 +227,14 @@ export default function RunningDetailScreen({ route }) {
 
                     {/* 공유 버튼 */}
                     <TouchableOpacity style={styles.shareButton}>
-                        <Ionicons name="share-social-outline" size={20} color="#FFF" />
+                        <Ionicons name="share-social-outline" size={20} color="#999" />
                         <Text style={styles.shareButtonText}>러닝 기록 공유하기</Text>
                     </TouchableOpacity>
 
                     <View style={styles.bottomPadding} />
                 </ScrollView>
             </SafeAreaView>
+            </LinearGradient>
         </TabScreenLayout>
     );
 }
@@ -236,7 +242,7 @@ export default function RunningDetailScreen({ route }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#D4E9D7',
+        
     },
     header: {
         flexDirection: 'row',
@@ -244,13 +250,14 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#D4E9D7',
+        
     },
     backButton: {
         padding: 4,
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: 22,
+        fontWeight: "bold",
         fontWeight: '600',
         color: '#333',
     },
@@ -261,7 +268,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     titleSection: {
-        backgroundColor: '#D4E9D7',
+        
         padding: 20,
         alignItems: 'center',
     },
@@ -277,7 +284,7 @@ const styles = StyleSheet.create({
     },
     mapContainer: {
         height: 250,
-        backgroundColor: '#E8F5E9',
+        backgroundColor: '#71D9A1',
         marginTop: 8,
     },
     map: {
@@ -297,7 +304,7 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: '#D4E9D7ㄴ',
+        backgroundColor: '#71D9A1',
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 3,
@@ -319,7 +326,7 @@ const styles = StyleSheet.create({
         color: '#FFF',
     },
     mainStatCard: {
-        backgroundColor: '#D4E9D7',
+        
         marginTop: 8,
         padding: 24,
         alignItems: 'center',
@@ -335,7 +342,7 @@ const styles = StyleSheet.create({
     },
     mainStatLabel: {
         fontSize: 14,
-        color: '#999',
+        color: '#666',
         marginBottom: 8,
     },
     mainStatValue: {
@@ -413,7 +420,7 @@ const styles = StyleSheet.create({
     shareButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#FFF',
+        color: '#999',
     },
     bottomPadding: {
         height: 32,

@@ -3,13 +3,13 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#D4E9D7",
+    
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#D4E9D7",
+    
   },
   loadingText: {
     marginTop: 12,
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   newBadge: {
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   submitButton: {
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
   },
   submitButtonText: {
     color: "#fff",
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   addReviewButtonText: {
-    color: "#7AC943",
+    color: "#71D9A1",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,

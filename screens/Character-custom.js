@@ -7,6 +7,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { characters, getCharacterById, defaultCharacter, profileImages, getProfileImageById } from '../data/characters';
 import { db } from '../services/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { LinearGradient } from 'expo-linear-gradient';
+
 
 export default function CharacterCustomScreen() {
     const router = useRouter();
@@ -112,7 +114,13 @@ export default function CharacterCustomScreen() {
     };
     
     return (
+    <LinearGradient
+        colors={['#B8E6F0', '#C8EDD4', '#D4E9D7']}
+        style={{ flex: 1 }}
+    >
+        
         <SafeAreaView style={styles.container}>
+
                 <View style={styles.header}>
                     <TouchableOpacity 
                         style={styles.backButton}
@@ -165,20 +173,20 @@ export default function CharacterCustomScreen() {
                     <Text style={styles.sectionTitle}>다음 레벨까지의 미션</Text>
                     <View style={styles.missionList}>
                         <View style={[styles.missionItem, !mission1 && styles.missionItemIncomplete]}>
-                            <Ionicons name="fitness" size={20} color={mission1 ? "#4CAF50" : "#CCCCCC"} />
+                            <Ionicons name="fitness" size={20} color={mission1 ? "#71D9A1" : "#CCCCCC"} />
                             <Text style={[styles.missionText, !mission1 && styles.missionTextIncomplete]}>2km 달리기 완주</Text>
                             {mission1 ? (
-                                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                                <Ionicons name="checkmark-circle" size={20} color="#71D9A1" />
                             ) : (
                                 <Ionicons name="ellipse-outline" size={20} color="#CCCCCC" />
                             )}
                         </View>
 
                         <View style={[styles.missionItem, !mission2 && styles.missionItemIncomplete]}>
-                            <Ionicons name="time" size={20} color={mission2 ? "#4CAF50" : "#CCCCCC"} />
+                            <Ionicons name="time" size={20} color={mission2 ? "#71D9A1" : "#CCCCCC"} />
                             <Text style={[styles.missionText, !mission2 && styles.missionTextIncomplete]}>10분 달리기</Text>
                             {mission2 ? (
-                                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                                <Ionicons name="checkmark-circle" size={20} color="#71D9A1" />
                             ) : (
                                 <Ionicons name="ellipse-outline" size={20} color="#CCCCCC" />
                             )}
@@ -199,7 +207,7 @@ export default function CharacterCustomScreen() {
 
                             {/* 뱃지 2: trophy (badge_2) */}
                             <View style={styles.badgeWrapper}>
-                                <View style={[styles.badge, { backgroundColor: badge2 ? '#81C784' : '#CCCCCC' }]}>
+                                <View style={[styles.badge, { backgroundColor: badge2 ? '#71D9A1' : '#CCCCCC' }]}>
                                     <Ionicons name="trophy" size={24} color="#FFF" />
                                 </View>
                                 {!badge2 && <Text style={styles.lockedText}>미획득</Text>}
@@ -224,13 +232,14 @@ export default function CharacterCustomScreen() {
                     </View>
                 </View>
             </SafeAreaView>
+             </LinearGradient>  
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#D4E9D7'
+        
     },
     header: {
         flexDirection: 'row',

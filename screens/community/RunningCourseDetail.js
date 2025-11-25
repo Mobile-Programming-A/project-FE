@@ -13,9 +13,12 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import styles from "./styles/RunningCourseDetail.styles";
+
+
 import {
   getCourseById,
   deleteCourse,
@@ -218,7 +221,7 @@ export default function RunningCourseDetail({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7AC943" />
+        <ActivityIndicator size="large" color="#71D9A1" />
         <Text style={styles.loadingText}>로딩 중...</Text>
       </View>
     );
@@ -230,8 +233,23 @@ export default function RunningCourseDetail({ route, navigation }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+
+      
+    <LinearGradient
+          colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+          locations={[0, 0.16, 1]}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        />
+
+   
+    <SafeAreaView style={[styles.container, { backgroundColor: "transparent" }]}>
+      <StatusBar barStyle="dark-content" />
 
         {/* 헤더 */}
         <View style={styles.header}>
@@ -239,7 +257,7 @@ export default function RunningCourseDetail({ route, navigation }) {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back" size={28} color="#333" />
+            <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>코스 상세</Text>
           <View style={styles.headerActions}>
@@ -286,7 +304,7 @@ export default function RunningCourseDetail({ route, navigation }) {
               >
                 <Marker
                   coordinate={course.startLocation}
-                  pinColor="#7AC943"
+                  pinColor="#71D9A1"
                   title="시작 위치"
                 />
                 <Marker
@@ -306,7 +324,7 @@ export default function RunningCourseDetail({ route, navigation }) {
                 course.routeCoordinates.length > 0 ? (
                   <Polyline
                     coordinates={course.routeCoordinates}
-                    strokeColor="#7AC943"
+                    strokeColor="#71D9A1"
                     strokeWidth={4}
                     lineCap="round"
                     lineJoin="round"
@@ -314,7 +332,7 @@ export default function RunningCourseDetail({ route, navigation }) {
                 ) : (
                   <Polyline
                     coordinates={[course.startLocation, course.endLocation]}
-                    strokeColor="#7AC943"
+                    strokeColor="#71D9A1"
                     strokeWidth={3}
                     strokePattern={[10, 5]}
                   />
@@ -340,7 +358,7 @@ export default function RunningCourseDetail({ route, navigation }) {
 
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Ionicons name="navigate" size={24} color="#7AC943" />
+                <Ionicons name="navigate" size={24} color="#71D9A1" />
                 <Text style={styles.statLabel}>거리</Text>
                 <Text style={styles.statValue}>{course.distance}</Text>
               </View>
@@ -375,7 +393,7 @@ export default function RunningCourseDetail({ route, navigation }) {
 
               <View style={styles.locationItem}>
                 <View style={styles.locationIcon}>
-                  <Ionicons name="play-circle" size={20} color="#7AC943" />
+                  <Ionicons name="play-circle" size={20} color="#71D9A1" />
                 </View>
                 <View style={styles.locationInfo}>
                   <Text style={styles.locationLabel}>시작 위치</Text>
@@ -424,7 +442,7 @@ export default function RunningCourseDetail({ route, navigation }) {
                     style={styles.addReviewButton}
                     onPress={() => setReviewModalVisible(true)}
                   >
-                    <Ionicons name="create-outline" size={20} color="#7AC943" />
+                    <Ionicons name="create-outline" size={20} color="#71D9A1" />
                     <Text style={styles.addReviewButtonText}>리뷰 작성</Text>
                   </TouchableOpacity>
                 </View>

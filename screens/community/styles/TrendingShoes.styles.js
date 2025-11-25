@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#D4E9D7",
+    
   },
   header: {
     flexDirection: "row",
@@ -154,8 +154,8 @@ const styles = StyleSheet.create({
     borderColor: "#E0E0E0",
   },
   sortButtonActive: {
-    backgroundColor: "#7AC943",
-    borderColor: "#7AC943",
+    backgroundColor: "#71D9A1",
+    borderColor: "#71D9A1",
   },
   sortButtonText: {
     fontSize: 14,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   },
   tagBadge: {
     fontSize: 11,
-    color: "#7AC943",
+    color: "#71D9A1",
     fontWeight: "600",
     backgroundColor: "#E8F5E0",
     paddingHorizontal: 8,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   addShoeButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
@@ -511,13 +511,13 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: "#7AC943",
+    borderColor: "#71D9A1",
     borderStyle: "dashed",
     backgroundColor: "#F8FFF4",
   },
   imagePickerText: {
     fontSize: 16,
-    color: "#7AC943",
+    color: "#71D9A1",
     fontWeight: "600",
   },
   imagePreviewContainer: {
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   submitButton: {
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
   },
   submitButtonText: {
     color: "#fff",
