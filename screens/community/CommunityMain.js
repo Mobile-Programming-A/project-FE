@@ -14,7 +14,7 @@ export default function CommunityMain({ navigation }) {
   const router = useRouter();
   return (
     <View style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView >
         <StatusBar barStyle="dark-content" />
         {/* 헤더 */}
         <View style={styles.header}>
@@ -29,11 +29,11 @@ export default function CommunityMain({ navigation }) {
               }
             }}
           >
-            <Ionicons name="chevron-back" size={28} color="#333" />
+            <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>커뮤니티</Text>
           <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-horizontal" size={28} color="#333" />
+            <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
           </TouchableOpacity>
         </View>
 

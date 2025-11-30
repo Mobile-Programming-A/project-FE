@@ -189,7 +189,7 @@ export default function CharacterEditScreen() {
                                             </View>
                                             {selectedCharacter?.id === character.id && (
                                                 <View style={styles.checkMark}>
-                                                    <Ionicons name="checkmark-circle" size={30} color="#4CAF50" />
+                                                    <Ionicons name="checkmark-circle" size={30} color="#71D9A1" />
                                                 </View>
                                             )}
                                         </TouchableOpacity>
@@ -213,7 +213,7 @@ export default function CharacterEditScreen() {
                                             <Text style={styles.profileName}>{profile.name}</Text>
                                             {selectedProfileImage?.id === profile.id && (
                                                 <View style={styles.checkMark}>
-                                                    <Ionicons name="checkmark-circle" size={30} color="#4CAF50" />
+                                                    <Ionicons name="checkmark-circle" size={30} color="#71D9A1" />
                                                 </View>
                                             )}
                                         </TouchableOpacity>
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     activeTab: {
-        backgroundColor: '#4CAF50'
+        backgroundColor: '#71D9A1'
     },
     tabText: {
         fontSize: 14,
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
         marginBottom: 15
     },
     selectedCard: {
-        borderColor: '#4CAF50',
+        borderColor: '#71D9A1',
         transform: [{ scale: 0.98 }]
     },
     gridCharacterImage: {
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
         flex: 1
     },
     levelBadge: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: '#71D9A1',
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 10

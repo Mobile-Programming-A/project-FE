@@ -24,10 +24,12 @@ export default function SplashScreen() {
     }, []);
 
     return (
-        <LinearGradient
-            colors={['#D4F7C5', '#F0FDEF']}
-            style={styles.container}
-        >
+         <LinearGradient
+                            colors={['#B8E6F0', '#C8EDD4', '#D4E9D7']}
+                            locations={[0, 0.4, 1]}
+                            style={styles.container}
+                        >
+
             <Animated.View
                 style={[
                     styles.content,

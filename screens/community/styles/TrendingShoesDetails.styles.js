@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#D4E9D7",
+    
   },
   header: {
     flexDirection: "row",
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   brandBadge: {
     fontSize: 14,
-    color: "#7AC943",
+    color: "#71D9A1",
     fontWeight: "700",
     backgroundColor: "#E8F5E0",
     paddingHorizontal: 12,

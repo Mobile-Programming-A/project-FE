@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { saveRunningRecord, migrateRecordsToFirestore } from '../services/runningRecordsService';
@@ -333,6 +335,17 @@ export default function RunningScreen() {
   };
 
   return (
+      <LinearGradient
+          colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+          locations={[0, 0.16, 1]}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
     <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
 
@@ -392,7 +405,7 @@ export default function RunningScreen() {
                   {/* 러닝 경로 - 메인 레이어 */}
                   <Polyline
                     coordinates={pathCoords}
-                    strokeColor="#7FD89A"
+                    strokeColor="#71D9A1"
                     strokeWidth={6}
                     lineCap="round"
                     lineJoin="round"
@@ -554,13 +567,14 @@ export default function RunningScreen() {
           </View>
         </Modal>
       </SafeAreaView>
+      </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#D4E9D7',
+    
   },
   header: {
     flexDirection: 'row',
@@ -568,7 +582,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#D4E9D7',
+   
   },
   backButton: {
     padding: 4,
@@ -578,8 +592,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: "bold",
+    lineHeight: 24,     
     color: '#333',
   },
   headerSubtitle: {
@@ -600,7 +615,7 @@ const styles = StyleSheet.create({
   },
   mapPlaceholder: {
     flex: 1,
-    backgroundColor: '#E8F5E9',
+    
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -631,7 +646,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#71D9A1',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -649,7 +664,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   infoCard: {
-    backgroundColor: '#D4E9D7',
+    
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 24,
@@ -711,11 +726,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#7FD89A',
+    backgroundColor: '#71D9A1',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-    shadowColor: '#7FD89A',
+    shadowColor: '#71D9A1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -723,7 +738,7 @@ const styles = StyleSheet.create({
   },
   startText: {
     fontSize: 14,
-    color: '#999',
+    color: '#666',
   },
   runningControls: {
     flexDirection: 'row',
@@ -776,7 +791,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: width * 0.8,
-    backgroundColor: '#D4E9D7',
+    
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',

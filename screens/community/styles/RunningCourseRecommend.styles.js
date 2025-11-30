@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#D4E9D7",
+    
   },
   header: {
     flexDirection: "row",
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    shadowColor: "#7AC943",
+    shadowColor: "#71D9A1",
     shadowOffset: {
       width: 0,
       height: 3,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E8F5E0",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#7AC943",
+    shadowColor: "#71D9A1",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -148,9 +148,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   profileCircleNew: {
-    borderColor: "#5B9A2F",
+    borderColor: "#5fb386ff",
     borderWidth: 4,
-    shadowColor: "#7AC943",
+    shadowColor: "#71D9A1",
     shadowOffset: {
       width: 0,
       height: 3,
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
     borderRadius: 8,
   },
   resetSearchText: {
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   submitButton: {
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
   },
   submitButtonText: {
     color: "#fff",
@@ -303,17 +303,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: "#7AC943",
+    borderColor: "#71D9A1",
     backgroundColor: "#fff",
   },
   locationButtonActive: {
-    backgroundColor: "#7AC943",
-    borderColor: "#7AC943",
+    backgroundColor: "#71D9A1",
+    borderColor: "#71D9A1",
   },
   locationButtonText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#7AC943",
+    color: "#71D9A1",
   },
   locationButtonTextActive: {
     color: "#fff",
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   },
   loadingRouteText: {
     fontSize: 13,
-    color: "#7AC943",
+    color: "#71D9A1",
     fontWeight: "500",
   },
   // 코스 리스트 스타일

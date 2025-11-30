@@ -22,6 +22,8 @@ import {
 } from "../../services/shoesService";
 import { pickAndUploadImage } from "../../services/imageUploadService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+import { StyleSheet } from "react-native";
 
 const BRANDS = [
   "Nike",
@@ -306,7 +308,14 @@ export default function TrendingShoes({ navigation }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container}>
+       <LinearGradient
+      colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+      style={StyleSheet.absoluteFillObject}
+    />
+
+    {/* SafeAreaView는 배경 투명으로 */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
+
         <StatusBar barStyle="dark-content" />
 
         {/* 헤더 */}
@@ -315,11 +324,11 @@ export default function TrendingShoes({ navigation }) {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back" size={28} color="#333" />
+            <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>지금 뜨는 러닝화</Text>
           <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-horizontal" size={28} color="#333" />
+            <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
           </TouchableOpacity>
         </View>
 
@@ -527,7 +536,7 @@ export default function TrendingShoes({ navigation }) {
         >
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#7AC943" />
+              <ActivityIndicator size="large" color="#71D9A1" />
               <Text style={styles.loadingText}>신발 정보를 불러오는 중...</Text>
             </View>
           ) : filteredShoes.length === 0 ? (
@@ -678,7 +687,7 @@ export default function TrendingShoes({ navigation }) {
                               <Ionicons
                                 name="checkmark"
                                 size={20}
-                                color="#7AC943"
+                                color="#71D9A1"
                               />
                             )}
                           </TouchableOpacity>
@@ -752,7 +761,7 @@ export default function TrendingShoes({ navigation }) {
                                 <Ionicons
                                   name="checkmark"
                                   size={20}
-                                  color="#7AC943"
+                                  color="#71D9A1"
                                 />
                               )}
                             </TouchableOpacity>
@@ -802,7 +811,7 @@ export default function TrendingShoes({ navigation }) {
                                 <Ionicons
                                   name="checkmark"
                                   size={20}
-                                  color="#7AC943"
+                                  color="#71D9A1"
                                 />
                               )}
                             </TouchableOpacity>
@@ -842,10 +851,10 @@ export default function TrendingShoes({ navigation }) {
                     disabled={uploadingImage}
                   >
                     {uploadingImage ? (
-                      <ActivityIndicator size="small" color="#7AC943" />
+                      <ActivityIndicator size="small" color="#71D9A1" />
                     ) : (
                       <>
-                        <Ionicons name="image" size={24} color="#7AC943" />
+                        <Ionicons name="image" size={24} color="#71D9A1" />
                         <Text style={styles.imagePickerText}>
                           {newShoe.imageUrl ? "이미지 변경" : "갤러리에서 선택"}
                         </Text>
