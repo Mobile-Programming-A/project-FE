@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker, Polyline } from "react-native-maps";
@@ -17,8 +18,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import styles from "./styles/RunningCourseRecommend.styles";
 import { getAllCourses, addCourse } from "../../services/runningCourseService";
 import { LinearGradient } from "expo-linear-gradient";
-import { StyleSheet } from "react-native";
-
 
 export default function RunningCourseRecommend({ navigation }) {
   const [courses, setCourses] = useState([]);
@@ -245,17 +244,16 @@ export default function RunningCourseRecommend({ navigation }) {
     }
   };
 
- return (
-  <View style={{ flex: 1 }}>
+  return (
+    <View style={{ flex: 1 }}>
+      {/* 그라데이션 배경 */}
+      <LinearGradient
+        colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+        style={{ ...StyleSheet.absoluteFillObject }}
+      />
 
-    {/* 그라데이션 배경 */}
-    <LinearGradient
-      colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
-      style={{ ...StyleSheet.absoluteFillObject }}
-    />
-
-    <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
-      <StatusBar barStyle="dark-content" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
+        <StatusBar barStyle="dark-content" />
 
         {/* 헤더 */}
         <View style={styles.header}>

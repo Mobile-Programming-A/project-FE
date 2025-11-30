@@ -60,6 +60,54 @@ const styles = StyleSheet.create({
     padding: 4,
     marginLeft: 8,
   },
+  // 정렬 컨테이너
+  sortContainer: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  sortButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#71D9A1",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  sortButtonActive: {
+    backgroundColor: "#71D9A1",
+    borderColor: "#71D9A1",
+  },
+  sortButtonDisabled: {
+    backgroundColor: "#f5f5f5",
+    borderColor: "#e0e0e0",
+    opacity: 0.6,
+  },
+  sortButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#71D9A1",
+  },
+  sortButtonTextActive: {
+    color: "#fff",
+  },
+  sortButtonTextDisabled: {
+    color: "#ccc",
+  },
   scrollView: {
     flex: 1,
   },
@@ -195,6 +243,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#999",
     lineHeight: 20,
+    marginBottom: 8,
+  },
+  // 별점 컨테이너
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#666",
   },
   likeButton: {
     position: "absolute",
@@ -257,7 +317,7 @@ const styles = StyleSheet.create({
     bottom: -15,
     right: -10,
     width: 80,
-    height: 230,
+    height: 310,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 40,
   },
@@ -287,6 +347,9 @@ const styles = StyleSheet.create({
   },
   fabMenuButtonGreen: {
     backgroundColor: "#71D9A1",
+  },
+  fabMenuButtonPink: {
+    backgroundColor: "#FF6B6B",
   },
   fabMenuLabel: {
     marginRight: 12,
