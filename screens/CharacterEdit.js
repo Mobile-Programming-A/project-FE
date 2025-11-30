@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Image, ScrollView, Alert, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +12,11 @@ export default function CharacterEditScreen() {
     const [selectedCharacter, setSelectedCharacter] = useState(null);
     const [selectedProfileImage, setSelectedProfileImage] = useState(null);
     const [editMode, setEditMode] = useState('character'); // 'character' or 'profile'
+    
+    // 애니메이션 refs
+    const jumpAnim = useRef(new Animated.Value(0)).current;
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
 
     // 컴포넌트 마운트 시 저장된 캐릭터 불러오기
     useEffect(() => {
@@ -55,6 +60,92 @@ export default function CharacterEditScreen() {
             console.error('프로필 사진 불러오기 실패:', error);
             setSelectedProfileImage(profileImages[0]);
         }
+    };
+
+    // 캐릭터 선택 시 애니메이션 실행
+    const handleCharacterSelect = (character) => {
+        setSelectedCharacter(character);
+        
+        // 점프 애니메이션
+        Animated.sequence([
+            Animated.parallel([
+                Animated.timing(jumpAnim, {
+                    toValue: -30,
+                    duration: 200,
+                    easing: Easing.out(Easing.quad),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1.1,
+                    duration: 200,
+                    easing: Easing.out(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(rotateAnim, {
+                    toValue: 1,
+                    duration: 200,
+                    easing: Easing.out(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ]),
+            Animated.parallel([
+                Animated.timing(jumpAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    easing: Easing.bounce,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1,
+                    duration: 300,
+                    easing: Easing.ease,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(rotateAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    easing: Easing.ease,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ]).start();
+    };
+
+    // 프로필 이미지 선택 시 애니메이션 실행
+    const handleProfileSelect = (profile) => {
+        setSelectedProfileImage(profile);
+        
+        // 점프 애니메이션
+        Animated.sequence([
+            Animated.parallel([
+                Animated.timing(jumpAnim, {
+                    toValue: -30,
+                    duration: 200,
+                    easing: Easing.out(Easing.quad),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1.1,
+                    duration: 200,
+                    easing: Easing.out(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ]),
+            Animated.parallel([
+                Animated.timing(jumpAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    easing: Easing.bounce,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1,
+                    duration: 300,
+                    easing: Easing.ease,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ]).start();
     };
 
     // 저장 함수
@@ -131,13 +222,28 @@ export default function CharacterEditScreen() {
                 <View style={styles.content}>
                     {/* 캐릭터 프리뷰 */}
                     <View style={styles.previewContainer}>
-                        <Image
-                            source={editMode === 'character' 
-                                ? (selectedCharacter ? selectedCharacter.image : characters[0].image)
-                                : (selectedProfileImage ? selectedProfileImage.image : profileImages[0].image)
-                            }
-                            style={styles.characterImage}
-                        />
+                        <View style={styles.previewCircle}>
+                            <Animated.View
+                                style={{
+                                    transform: [
+                                        { translateY: jumpAnim },
+                                        { scale: scaleAnim },
+                                        { rotate: rotateAnim.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: ['0deg', '5deg']
+                                        })}
+                                    ],
+                                }}
+                            >
+                                <Image
+                                    source={editMode === 'character' 
+                                        ? (selectedCharacter ? selectedCharacter.image : characters[0].image)
+                                        : (selectedProfileImage ? selectedProfileImage.image : profileImages[0].image)
+                                    }
+                                    style={styles.characterImage}
+                                />
+                            </Animated.View>
+                        </View>
                     </View>
 
                     {/* 탭 전환 버튼 */}
@@ -175,7 +281,7 @@ export default function CharacterEditScreen() {
                                                 styles.characterCard,
                                                 selectedCharacter?.id === character.id && styles.selectedCard
                                             ]}
-                                            onPress={() => setSelectedCharacter(character)}
+                                            onPress={() => handleCharacterSelect(character)}
                                         >
                                             <Image
                                                 source={character.image}
@@ -204,7 +310,7 @@ export default function CharacterEditScreen() {
                                                 styles.profileCard,
                                                 selectedProfileImage?.id === profile.id && styles.selectedCard
                                             ]}
-                                            onPress={() => setSelectedProfileImage(profile)}
+                                            onPress={() => handleProfileSelect(profile)}
                                         >
                                             <Image
                                                 source={profile.image}
@@ -284,6 +390,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 30,
         paddingTop: 10
+    },
+    previewCircle: {
+        width: 280,
+        height: 280,
+        borderRadius: 140,
+        backgroundColor: '#FFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 5
     },
     characterImage: {
         width: 180,
@@ -424,9 +544,9 @@ const styles = StyleSheet.create({
     profileCard: {
         width: '47%',
         aspectRatio: 1,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: 'transparent',
         borderRadius: 20,
-        overflow: 'hidden',
+        overflow: 'visible',
         position: 'relative',
         borderWidth: 3,
         borderColor: 'transparent',
@@ -438,8 +558,8 @@ const styles = StyleSheet.create({
     profileImage: {
         width: '85%',
         height: '85%',
-        resizeMode: 'contain',
-        borderRadius: 100
+        resizeMode: 'cover',
+        borderRadius: 1000
     },
     profileName: {
         position: 'absolute',
