@@ -387,52 +387,6 @@ export default function RunningCourseDetail({ route, navigation }) {
               </View>
             )}
 
-            {/* 위치 정보 */}
-            <View style={styles.locationsContainer}>
-              <Text style={styles.sectionTitle}>위치 정보</Text>
-
-              <View style={styles.locationItem}>
-                <View style={styles.locationIcon}>
-                  <Ionicons name="play-circle" size={20} color="#71D9A1" />
-                </View>
-                <View style={styles.locationInfo}>
-                  <Text style={styles.locationLabel}>시작 위치</Text>
-                  <Text style={styles.locationCoords}>
-                    {course.startLocation.latitude.toFixed(6)},{" "}
-                    {course.startLocation.longitude.toFixed(6)}
-                  </Text>
-                </View>
-              </View>
-
-              {course.waypoints?.map((waypoint, index) => (
-                <View key={index} style={styles.locationItem}>
-                  <View style={[styles.locationIcon, styles.waypointIcon]}>
-                    <Ionicons name="location" size={20} color="#4A90E2" />
-                  </View>
-                  <View style={styles.locationInfo}>
-                    <Text style={styles.locationLabel}>경유지 {index + 1}</Text>
-                    <Text style={styles.locationCoords}>
-                      {waypoint.latitude.toFixed(6)},{" "}
-                      {waypoint.longitude.toFixed(6)}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-
-              <View style={styles.locationItem}>
-                <View style={[styles.locationIcon, styles.endIcon]}>
-                  <Ionicons name="stop-circle" size={20} color="#FF6B6B" />
-                </View>
-                <View style={styles.locationInfo}>
-                  <Text style={styles.locationLabel}>종료 위치</Text>
-                  <Text style={styles.locationCoords}>
-                    {course.endLocation.latitude.toFixed(6)},{" "}
-                    {course.endLocation.longitude.toFixed(6)}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
             {/* 리뷰 섹션 - hideReviews가 true이면 숨김 */}
             {!hideReviews && (
               <View style={styles.reviewsContainer}>
@@ -502,6 +456,52 @@ export default function RunningCourseDetail({ route, navigation }) {
                 )}
               </View>
             )}
+
+            {/* 위치 정보 */}
+            <View style={styles.locationsContainer}>
+              <Text style={styles.sectionTitle}>위치 정보</Text>
+
+              <View style={styles.locationItem}>
+                <View style={styles.locationIcon}>
+                  <Ionicons name="play-circle" size={20} color="#71D9A1" />
+                </View>
+                <View style={styles.locationInfo}>
+                  <Text style={styles.locationLabel}>시작 위치</Text>
+                  <Text style={styles.locationCoords}>
+                    {course.startLocation.latitude.toFixed(6)},{" "}
+                    {course.startLocation.longitude.toFixed(6)}
+                  </Text>
+                </View>
+              </View>
+
+              {course.waypoints?.map((waypoint, index) => (
+                <View key={index} style={styles.locationItem}>
+                  <View style={[styles.locationIcon, styles.waypointIcon]}>
+                    <Ionicons name="location" size={20} color="#4A90E2" />
+                  </View>
+                  <View style={styles.locationInfo}>
+                    <Text style={styles.locationLabel}>경유지 {index + 1}</Text>
+                    <Text style={styles.locationCoords}>
+                      {waypoint.latitude.toFixed(6)},{" "}
+                      {waypoint.longitude.toFixed(6)}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+
+              <View style={styles.locationItem}>
+                <View style={[styles.locationIcon, styles.endIcon]}>
+                  <Ionicons name="stop-circle" size={20} color="#FF6B6B" />
+                </View>
+                <View style={styles.locationInfo}>
+                  <Text style={styles.locationLabel}>종료 위치</Text>
+                  <Text style={styles.locationCoords}>
+                    {course.endLocation.latitude.toFixed(6)},{" "}
+                    {course.endLocation.longitude.toFixed(6)}
+                  </Text>
+                </View>
+              </View>
+            </View>
           </View>
         </ScrollView>
 
