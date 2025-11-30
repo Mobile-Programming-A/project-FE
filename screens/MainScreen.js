@@ -12,7 +12,7 @@ import {
   where,
   orderBy,
 } from "firebase/firestore";
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import {
   Dimensions,
   Image,
@@ -23,6 +23,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Animated,
+  Easing,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import MapSection from "../components/MapSection";
@@ -101,6 +103,20 @@ export default function MainScreen() {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [friends, setFriends] = useState([]);
   const [myLocation, setMyLocation] = useState(null);
+  const [isFacingRight, setIsFacingRight] = useState(true);
+  const [currentAnimationStyle, setCurrentAnimationStyle] = useState(0);
+  const [isWinking, setIsWinking] = useState(false);
+  const [isSurprised, setIsSurprised] = useState(false);
+  const [isBasicWinking, setIsBasicWinking] = useState(false);
+  const [isCapWinking, setIsCapWinking] = useState(false);
+
+  // 애니메이션 관련 ref
+  const bounceAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const tapScaleAnim = useRef(new Animated.Value(1)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+  const flipAnim = useRef(new Animated.Value(1)).current;
 
   // ✔ 메시지는 앱 처음 로드될 때만 설정
   useEffect(() => {
@@ -108,13 +124,324 @@ export default function MainScreen() {
     setEncouragingMessage(encouragingMessages[randomIndex]);
   }, []);
 
-  // ✔ MainScreen 포커스 시 필요 데이터 로드
+  // 🎭 캐릭터 애니메이션 (4가지 스타일)
+  useEffect(() => {
+    // 애니메이션 초기화
+    bounceAnim.setValue(0);
+    scaleAnim.setValue(1);
+    rotateAnim.setValue(0);
+
+    let animations = [];
+
+    // 스타일 0: 부드러운 호흡 (기본)
+    if (currentAnimationStyle === 0) {
+      const breathingAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceAnim, {
+            toValue: -8,
+            duration: 1500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceAnim, {
+            toValue: 0,
+            duration: 1500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const wiggleAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(rotateAnim, {
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateAnim, {
+            toValue: -1,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateAnim, {
+            toValue: 0,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      animations.push(breathingAnimation, wiggleAnimation);
+    }
+
+    // 스타일 1: 신나는 바운스
+    else if (currentAnimationStyle === 1) {
+      const bounceAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceAnim, {
+            toValue: -15,
+            duration: 600,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceAnim, {
+            toValue: 0,
+            duration: 600,
+            easing: Easing.bounce,
+            useNativeDriver: true,
+          }),
+          Animated.delay(800),
+        ])
+      );
+
+      const scaleAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 1.1,
+            duration: 600,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 600,
+            easing: Easing.in(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.delay(800),
+        ])
+      );
+
+      animations.push(bounceAnimation, scaleAnimation);
+    }
+
+    // 스타일 2: 느긋한 펄스
+    else if (currentAnimationStyle === 2) {
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 1.05,
+            duration: 2000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const slowBounce = Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceAnim, {
+            toValue: -5,
+            duration: 2500,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceAnim, {
+            toValue: 0,
+            duration: 2500,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      animations.push(pulseAnimation, slowBounce);
+    }
+
+    // 스타일 3: 활발한 움직임
+    else if (currentAnimationStyle === 3) {
+      const energeticBounce = Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceAnim, {
+            toValue: -10,
+            duration: 800,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceAnim, {
+            toValue: 0,
+            duration: 800,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const energeticWiggle = Animated.loop(
+        Animated.sequence([
+          Animated.timing(rotateAnim, {
+            toValue: 1.5,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateAnim, {
+            toValue: -1.5,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateAnim, {
+            toValue: 0,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const quickPulse = Animated.loop(
+        Animated.sequence([
+          Animated.delay(3000),
+          Animated.timing(scaleAnim, {
+            toValue: 1.12,
+            duration: 150,
+            easing: Easing.out(Easing.back(2)),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 250,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      animations.push(energeticBounce, energeticWiggle, quickPulse);
+    }
+
+    // 모든 애니메이션 시작
+    animations.forEach(anim => anim.start());
+
+    return () => {
+      animations.forEach(anim => anim.stop());
+    };
+  }, [currentAnimationStyle, bounceAnim, scaleAnim, rotateAnim]);
+
+  // 👁️ 겨울 러너 캐릭터 윙크 효과 (랜덤)
+  useEffect(() => {
+    // 겨울 러너 캐릭터(id: 4)일 때만 윙크
+    if (selectedCharacter?.id !== 4) return;
+
+    const winkRandomly = () => {
+      // 5~15초 사이 랜덤 간격으로 윙크
+      const randomDelay = Math.random() * 10000 + 5000;
+      
+      const timer = setTimeout(() => {
+        setIsWinking(true);
+        
+        // 300ms 후 원래대로
+        setTimeout(() => {
+          setIsWinking(false);
+          winkRandomly(); // 다음 윙크 예약
+        }, 300);
+      }, randomDelay);
+
+      return timer;
+    };
+
+    const timer = winkRandomly();
+    return () => clearTimeout(timer);
+  }, [selectedCharacter]);
+
+  // 😲 썬글라스 망키 놀란 표정 효과 (랜덤)
+  useEffect(() => {
+    // 썬글라스 망키(id: 2)일 때만 놀란 표정
+    if (selectedCharacter?.id !== 2) return;
+
+    const surpriseRandomly = () => {
+      // 5~15초 사이 랜덤 간격으로 놀란 표정
+      const randomDelay = Math.random() * 10000 + 5000;
+      
+      const timer = setTimeout(() => {
+        setIsSurprised(true);
+        
+        // 400ms 후 원래대로
+        setTimeout(() => {
+          setIsSurprised(false);
+          surpriseRandomly(); // 다음 놀란 표정 예약
+        }, 400);
+      }, randomDelay);
+
+      return timer;
+    };
+
+    const timer = surpriseRandomly();
+    return () => clearTimeout(timer);
+  }, [selectedCharacter]);
+
+  // 😉 기본 망키 윙크 효과 (랜덤)
+  useEffect(() => {
+    // 기본 망키(id: 1)일 때만 윙크
+    if (selectedCharacter?.id !== 1) return;
+
+    const basicWinkRandomly = () => {
+      // 5~15초 사이 랜덤 간격으로 윙크
+      const randomDelay = Math.random() * 10000 + 5000;
+      
+      const timer = setTimeout(() => {
+        setIsBasicWinking(true);
+        
+        // 300ms 후 원래대로
+        setTimeout(() => {
+          setIsBasicWinking(false);
+          basicWinkRandomly(); // 다음 윙크 예약
+        }, 300);
+      }, randomDelay);
+
+      return timer;
+    };
+
+    const timer = basicWinkRandomly();
+    return () => clearTimeout(timer);
+  }, [selectedCharacter]);
+
+  // 😉 모자 망키 윙크 효과 (랜덤)
+  useEffect(() => {
+    // 모자 망키(id: 3)일 때만 윙크
+    if (selectedCharacter?.id !== 3) return;
+
+    const capWinkRandomly = () => {
+      // 5~15초 사이 랜덤 간격으로 윙크
+      const randomDelay = Math.random() * 10000 + 5000;
+      
+      const timer = setTimeout(() => {
+        setIsCapWinking(true);
+        
+        // 300ms 후 원래대로
+        setTimeout(() => {
+          setIsCapWinking(false);
+          capWinkRandomly(); // 다음 윙크 예약
+        }, 300);
+      }, randomDelay);
+
+      return timer;
+    };
+
+    const timer = capWinkRandomly();
+    return () => clearTimeout(timer);
+  }, [selectedCharacter]);
+
+  // ✔ MainScreen 포커스 시 필요 데이터 로드 + 애니메이션 스타일 랜덤 선택
   useFocusEffect(
     useCallback(() => {
       loadRecords();
       loadSelectedCharacter();
       loadSelectedProfileImage();
       loadMyLocation();
+      // 0~3 사이 랜덤 애니메이션 스타일 선택
+      setCurrentAnimationStyle(Math.floor(Math.random() * 4));
     }, [])
   );
 
@@ -304,6 +631,70 @@ export default function MainScreen() {
     router.push("/friends");
   };
 
+  // 🎯 캐릭터 클릭 상호작용
+  const handleCharacterPress = () => {
+    // 랜덤 응원 메시지 변경
+    const randomIndex = Math.floor(Math.random() * encouragingMessages.length);
+    setEncouragingMessage(encouragingMessages[randomIndex]);
+
+    // 방향 전환
+    const newDirection = !isFacingRight;
+    setIsFacingRight(newDirection);
+
+    // 1. 점프 애니메이션
+    Animated.sequence([
+      Animated.timing(tapScaleAnim, {
+        toValue: 0.85,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(tapScaleAnim, {
+        toValue: 1.15,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.spring(tapScaleAnim, {
+        toValue: 1,
+        friction: 5,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // 2. 좌우 흔들림 (신나는 느낌)
+    Animated.sequence([
+      Animated.timing(shakeAnim, {
+        toValue: 10,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: -10,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: 10,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: 0,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // 3. 좌우 반전 애니메이션 (빠른 회전)
+    Animated.spring(flipAnim, {
+      toValue: newDirection ? 1 : -1,
+      friction: 5,
+      tension: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+
   // ----------------------------------
   // ---- UI 렌더링 ----
   // ----------------------------------
@@ -370,10 +761,51 @@ export default function MainScreen() {
                 <View style={styles.speechBubbleTail} />
               </View>
 
-              <Image
-                source={selectedCharacter?.image || defaultCharacter.image}
-                style={styles.character}
-              />
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handleCharacterPress}
+              >
+                <Animated.View
+                  style={[
+                    styles.characterAnimationContainer,
+                    {
+                      transform: [
+                        { translateY: bounceAnim },
+                        { translateX: shakeAnim },
+                        {
+                          rotate: rotateAnim.interpolate({
+                            inputRange: [-1, 1],
+                            outputRange: ["-3deg", "3deg"],
+                          }),
+                        },
+                        { 
+                          scale: Animated.multiply(scaleAnim, tapScaleAnim)
+                        },
+                        { scaleX: flipAnim },
+                      ],
+                    },
+                  ]}
+                >
+                  <Image
+                    source={
+                      // 겨울 러너 캐릭터가 윙크 중이면 윙크 이미지 표시
+                      selectedCharacter?.id === 4 && isWinking
+                        ? require('../assets/character_image/winter_runner_mangkee_wink.png')
+                        // 썬글라스 망키가 놀란 표정이면 놀란 이미지 표시
+                        : selectedCharacter?.id === 2 && isSurprised
+                        ? require('../assets/character_image/sunglass_mangkee_o.png')
+                        // 기본 망키가 윙크 중이면 윙크 이미지 표시
+                        : selectedCharacter?.id === 1 && isBasicWinking
+                        ? require('../assets/character_image/mangkee_character_wink.png')
+                        // 모자 망키가 윙크 중이면 윙크 이미지 표시
+                        : selectedCharacter?.id === 3 && isCapWinking
+                        ? require('../assets/character_image/cap_mangkee_wink.png')
+                        : selectedCharacter?.image || defaultCharacter.image
+                    }
+                    style={styles.character}
+                  />
+                </Animated.View>
+              </TouchableOpacity>
             </View>
 
             {/* 지도 영역 */}
@@ -480,6 +912,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 20,
     position: "relative",
+  },
+  characterAnimationContainer: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   speechBubbleContainer: {
     position: "relative",
