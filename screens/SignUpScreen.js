@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { defaultCharacter } from '../data/characters';
+import { doc, setDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
     Dimensions,
-    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -16,9 +16,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from '../services/config';
-import { doc, setDoc } from 'firebase/firestore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -125,11 +123,10 @@ export default function SignUpScreen() {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={['#D4F7C5', '#F0FDEF']}
+                colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+                locations={[0, 0.3, 1]}
                 style={StyleSheet.absoluteFillObject}
             />
-
-            <View style={styles.ellipseBackground} />
 
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
@@ -142,10 +139,6 @@ export default function SignUpScreen() {
                     >
                         <Ionicons name="arrow-back" size={24} color="#333" />
                     </TouchableOpacity>
-                    <Image
-                        source={defaultCharacter.image}
-                        style={styles.character}
-                    />
                     <Text style={styles.title}>회원가입</Text>
                     <Text style={styles.subtitle}>망키와 함께 달려보세요!</Text>
                 </View>
@@ -257,20 +250,13 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-    },
-    ellipseBackground: {
-        position: 'absolute',
-        bottom: -height * 0.1,
-        left: -width * 0.3,
-        right: -width * 0.3,
-        height: height * 0.7,
-        backgroundColor: '#C2D88B',
-        borderRadius: width * 1.5,
+        paddingVertical: 40,
     },
     topContainer: {
         alignItems: 'center',
-        paddingTop: 60,
+        paddingTop: 50,
         paddingHorizontal: 20,
+        paddingBottom: 20,
         zIndex: 1,
     },
     backButton: {
@@ -279,12 +265,6 @@ const styles = StyleSheet.create({
         left: 20,
         zIndex: 10,
         padding: 10,
-    },
-    character: {
-        width: width * 0.5,
-        height: width * 0.5,
-        resizeMode: 'contain',
-        marginBottom: 15,
     },
     title: {
         fontSize: 24,

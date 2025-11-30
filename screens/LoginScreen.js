@@ -11,6 +11,9 @@ import {
     Alert,
     Dimensions,
     Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -84,11 +87,13 @@ export default function LoginScreen() {
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
 
+            let userName = user.displayName || user.email?.split('@')[0] || '사용자';
+            
             if (!userDoc.exists()) {
                 // 새 사용자 정보 생성
                 await setDoc(userDocRef, {
                     email: user.email,
-                    name: user.displayName || user.email?.split('@')[0] || '사용자',
+                    name: userName,
                     avatar: 'avatar1',
                     characterId: 1,
                     level: 1,
@@ -96,11 +101,15 @@ export default function LoginScreen() {
                     maxExp: 100,
                     createdAt: new Date().toISOString(),
                 });
+            } else {
+                // 기존 사용자 정보에서 이름 가져오기
+                const userData = userDoc.data();
+                userName = userData?.name || userName;
             }
 
             Alert.alert(
                 '로그인 성공',
-                `환영합니다, ${user.email}님!`,
+                `환영합니다, ${userName}님!`,
                 [
                     {
                         text: '확인',
@@ -134,7 +143,11 @@ export default function LoginScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView 
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
             <LinearGradient
                 colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
                 locations={[0, 0.3, 1]}
@@ -154,101 +167,102 @@ export default function LoginScreen() {
                 <GrassVector left={width / 2} bottom={height * 0.54} rotation={-5} scale={1.05} />
                 <GrassVector left={width - 30} bottom={height * 0.50} rotation={-5} scale={1.05} />
 
-            <View style={styles.topContainer}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+            >
+                <View style={styles.topContainer}>
+                    <View style={styles.speechBubbleContainer}>
+                        <View style={styles.speechBubble}>
+                            <Text style={styles.speechBubbleText}>
+                                망키와 함께 달려보세요!
+                            </Text>
+                        </View>
+                        <View style={styles.speechBubbleTail} />
+                    </View>
 
-           
-            <View style={styles.speechBubbleContainer}>
-                <View style={styles.speechBubble}>
-                    <Text style={styles.speechBubbleText}>
-                        망키와 함께 달려보세요!
-                    </Text>
-                </View>
-                <View style={styles.speechBubbleTail} />
-            </View>
-
-            <Image
-                source={defaultCharacter.image}
-                style={styles.character}
-            />
-
-        </View>
-
-
-
-
-
-
-            <View style={styles.bottomContainer}>
-                {/* 이메일 입력 */}
-                <View style={styles.inputContainer}>
-                    <Ionicons name="mail-outline" size={20} color="#999" style={styles.inputIcon} />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="이메일"
-                        placeholderTextColor="#999"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        editable={!isLoading}
+                    <Image
+                        source={defaultCharacter.image}
+                        style={styles.character}
                     />
                 </View>
 
-                {/* 비밀번호 입력 */}
-                <View style={styles.inputContainer}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="비밀번호"
-                        placeholderTextColor="#999"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        editable={!isLoading}
-                    />
-                    <TouchableOpacity
-                        onPress={() => setShowPassword(!showPassword)}
-                        style={styles.eyeIcon}
-                    >
-                        <Ionicons
-                            name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                            size={20}
-                            color="#999"
+                <View style={styles.bottomContainer}>
+                    {/* 이메일 입력 */}
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="mail-outline" size={20} color="#999" style={styles.inputIcon} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="이메일"
+                            placeholderTextColor="#999"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            editable={!isLoading}
                         />
-                    </TouchableOpacity>
-                </View>
+                    </View>
 
-                {/* 로그인 버튼 */}
-                <TouchableOpacity
-                    style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-                    onPress={handleLogin}
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <ActivityIndicator color="#FFFFFF" />
-                    ) : (
-                        <Text style={styles.loginButtonText}>로그인</Text>
-                    )}
-                </TouchableOpacity>
+                    {/* 비밀번호 입력 */}
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="비밀번호"
+                            placeholderTextColor="#999"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showPassword}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            editable={!isLoading}
+                        />
+                        <TouchableOpacity
+                            onPress={() => setShowPassword(!showPassword)}
+                            style={styles.eyeIcon}
+                        >
+                            <Ionicons
+                                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                                size={20}
+                                color="#999"
+                            />
+                        </TouchableOpacity>
+                    </View>
 
-                {/* 회원가입 링크 */}
-                <View style={styles.signupContainer}>
-                    <Text style={styles.signupText}>계정이 없으신가요? </Text>
-                    <TouchableOpacity onPress={handleSignUp} disabled={isLoading}>
-                        <Text style={styles.signupLink}>회원가입</Text>
+                    {/* 로그인 버튼 */}
+                    <TouchableOpacity
+                        style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                        onPress={handleLogin}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <Text style={styles.loginButtonText}>로그인</Text>
+                        )}
                     </TouchableOpacity>
+
+                    {/* 회원가입 링크 */}
+                    <View style={styles.signupContainer}>
+                        <Text style={styles.signupText}>계정이 없으신가요? </Text>
+                        <TouchableOpacity onPress={handleSignUp} disabled={isLoading}>
+                            <Text style={styles.signupLink}>회원가입</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
-        </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
     },
     ellipseBackground: {
         position: 'absolute',
