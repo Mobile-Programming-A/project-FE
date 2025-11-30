@@ -7,9 +7,11 @@ import {
   StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import styles from "./styles/CommunityMain.styles";
 
 export default function CommunityMain({ navigation }) {
+  const router = useRouter();
   return (
     <View style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
@@ -19,8 +21,12 @@ export default function CommunityMain({ navigation }) {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => {
-              // Tab Navigator로 이동 (메인 화면으로)
-              navigation.navigate("main");
+              // Expo Router를 사용하여 뒤로 가기
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)/main");
+              }
             }}
           >
             <Ionicons name="chevron-back" size={28} color="#333" />

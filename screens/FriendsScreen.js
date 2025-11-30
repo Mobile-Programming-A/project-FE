@@ -327,7 +327,7 @@ export default function FriendsScreen() {
           paddingTop: 20,
         }}
       >
-        <TouchableOpacity onPress={() => router.replace("/main")}>
+        <TouchableOpacity onPress={() => router.replace("/(tabs)/main")}>
           <Ionicons name="chevron-back" size={26} color="#1C1C1C" />
         </TouchableOpacity>
 

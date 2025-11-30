@@ -1,11 +1,14 @@
 // screens/MainScreen.js
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
+import { signOut } from 'firebase/auth';
 import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+    Alert,
     Dimensions,
     Image,
     SafeAreaView,
@@ -19,7 +22,8 @@ import {
 import MapSection from '../components/MapSection';
 import TabScreenLayout from '../components/TabScreenLayout';
 import { characters, defaultCharacter, getCharacterById, getProfileImageById, profileImages } from '../data/characters';
-import { db } from '../services/config';
+import { auth, db } from '../services/config';
+import { getRunningRecords, migrateRecordsToFirestore } from '../services/runningRecordsService';
 
 const { width } = Dimensions.get('window');
 
@@ -47,7 +51,9 @@ export default function MainScreen() {
     const [lastRunPath, setLastRunPath] = useState(null);
     const [selectedCharacter, setSelectedCharacter] = useState(null);
     const [selectedProfileImage, setSelectedProfileImage] = useState(null);
+    const [userName, setUserName] = useState('');
     const [encouragingMessage, setEncouragingMessage] = useState('');
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     // 친구 목록 상태
     const [friends, setFriends] = useState([]);
@@ -61,15 +67,34 @@ export default function MainScreen() {
         return encouragingMessages[randomIndex];
     };
 
+    // 인증 상태 확인
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            setIsLoggedIn(!!user);
+            if (!user) {
+                // 로그아웃 상태일 때 기록 초기화
+                setTotalDistance(0);
+                setTotalTime(0);
+                setLastRunDate(null);
+                setLastRunPath(null);
+                setUserName('');
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
     // 화면이 포커스될 때마다 기록 및 캐릭터 불러오기, 격려 메시지 변경
     useFocusEffect(
         useCallback(() => {
-            loadRecords();
-            loadSelectedCharacter();
-            loadSelectedProfileImage();
-            setEncouragingMessage(getRandomMessage());
-            loadMyLocation();
-        }, [])
+            if (isLoggedIn) {
+                loadRecords();
+                loadSelectedCharacter();
+                loadSelectedProfileImage();
+                loadUserName();
+                setEncouragingMessage(getRandomMessage());
+                loadMyLocation();
+            }
+        }, [isLoggedIn])
     );
 
     // 친구 목록 실시간 동기화
@@ -187,34 +212,133 @@ export default function MainScreen() {
         }
     };
 
+    // 사용자 이름 불러오기
+    const loadUserName = async () => {
+        try {
+            // Firebase Authentication에서 현재 사용자 정보 가져오기
+            const { auth } = await import('../services/config');
+            const currentUser = auth.currentUser;
+            
+            if (currentUser) {
+                // Firestore에서 사용자 정보 가져오기
+                const usersRef = collection(db, 'users');
+                const q = query(usersRef, where('email', '==', currentUser.email));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const userData = querySnapshot.docs[0].data();
+                    if (userData.name) {
+                        setUserName(userData.name);
+                    } else {
+                        // 이름이 없으면 이메일에서 추출
+                        setUserName(currentUser.email?.split('@')[0] || '사용자');
+                    }
+                } else {
+                    // Firestore에 사용자 정보가 없으면 이메일에서 추출
+                    setUserName(currentUser.email?.split('@')[0] || '사용자');
+                }
+            }
+        } catch (error) {
+            console.error('사용자 이름 불러오기 실패:', error);
+            setUserName('사용자');
+        }
+    };
+
     // 기록 불러오기
     const loadRecords = async () => {
         try {
-            const recordsJson = await AsyncStorage.getItem('runningRecords');
-            if (recordsJson) {
-                const records = JSON.parse(recordsJson);
+            // 초기화
+            setTotalDistance(0);
+            setTotalTime(0);
+            setLastRunDate(null);
+            setLastRunPath(null);
 
-                if (records.length > 0) {
-                    const distance = records.reduce((sum, record) => sum + record.distance, 0);
-                    const time = records.reduce((sum, record) => sum + record.time, 0);
-
-                    setTotalDistance(distance);
-                    setTotalTime(time);
-
-                    const sortedRecords = records.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    const lastRecord = sortedRecords[0];
-                    setLastRunDate(lastRecord.date);
-
-                    if (lastRecord.pathCoords && lastRecord.pathCoords.length > 0) {
-                        setLastRunPath(lastRecord.pathCoords);
-                    } else {
-                        setLastRunPath(null);
+            // 마이그레이션: 기존 AsyncStorage 데이터가 있으면 Firestore로 이전 (한 번만 실행)
+            try {
+                const migrationDone = await AsyncStorage.getItem('migrationToFirestoreDone');
+                if (!migrationDone) {
+                    const existingRecordsJson = await AsyncStorage.getItem('runningRecords');
+                    if (existingRecordsJson) {
+                        const existingRecords = JSON.parse(existingRecordsJson);
+                        if (existingRecords.length > 0) {
+                            await migrateRecordsToFirestore(existingRecords);
+                        }
                     }
+                    // 마이그레이션 완료 표시
+                    await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
+                }
+            } catch (migrationError) {
+                console.error('마이그레이션 중 오류:', migrationError);
+            }
+
+            // Firestore에서 기록 불러오기
+            const records = await getRunningRecords();
+
+            if (records.length > 0) {
+                const distance = records.reduce((sum, record) => sum + (record.distance || 0), 0);
+                const time = records.reduce((sum, record) => sum + (record.time || 0), 0);
+
+                setTotalDistance(distance);
+                setTotalTime(time);
+
+                const sortedRecords = records.sort((a, b) => new Date(b.date) - new Date(a.date));
+                const lastRecord = sortedRecords[0];
+                setLastRunDate(lastRecord.date);
+
+                if (lastRecord.pathCoords && lastRecord.pathCoords.length > 0) {
+                    setLastRunPath(lastRecord.pathCoords);
+                } else {
+                    setLastRunPath(null);
                 }
             }
         } catch (error) {
             console.error('기록 불러오기 실패:', error);
+            // 에러 발생 시에도 초기화
+            setTotalDistance(0);
+            setTotalTime(0);
+            setLastRunDate(null);
+            setLastRunPath(null);
         }
+    };
+
+    // 로그아웃 처리
+    const handleLogout = async () => {
+        Alert.alert(
+            '로그아웃',
+            '정말 로그아웃하시겠습니까?',
+            [
+                {
+                    text: '취소',
+                    style: 'cancel'
+                },
+                {
+                    text: '로그아웃',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await signOut(auth);
+                            // AsyncStorage 초기화 (선택사항)
+                            await AsyncStorage.removeItem('userEmail');
+                            // 기록 초기화
+                            setTotalDistance(0);
+                            setTotalTime(0);
+                            setLastRunDate(null);
+                            setLastRunPath(null);
+                            setUserName('');
+                            // MainScreen에 그대로 유지 (로그아웃 상태로 표시)
+                        } catch (error) {
+                            console.error('로그아웃 실패:', error);
+                            Alert.alert('오류', '로그아웃에 실패했습니다.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    // 로그인 화면으로 이동
+    const handleLogin = () => {
+        router.replace('/');
     };
 
     // 시간 포맷팅
@@ -243,17 +367,42 @@ export default function MainScreen() {
                     <View style={styles.header}>
                         <TouchableOpacity
                             style={styles.profileContainer}
-                            onPress={() => router.push('/Character-custom')}
+                            onPress={() => {
+                                if (isLoggedIn) {
+                                    router.push('/(tabs)/Character-custom');
+                                } else {
+                                    handleLogin();
+                                }
+                            }}
                         >
                             <Image
                                 source={selectedProfileImage ? selectedProfileImage.image : profileImages[0].image}
                                 style={styles.profileImage}
                             />
                             <Text style={styles.profileName}>
-                                {selectedCharacter ? selectedCharacter.name : defaultCharacter.name}
+                                {isLoggedIn 
+                                    ? (userName || (selectedCharacter ? selectedCharacter.name : defaultCharacter.name))
+                                    : '로그인이 필요합니다'
+                                }
                             </Text>
                         </TouchableOpacity>
-                        <View style={styles.chatBubble} />
+                        {isLoggedIn ? (
+                            <TouchableOpacity
+                                style={styles.logoutButton}
+                                onPress={handleLogout}
+                            >
+                                <Ionicons name="log-out-outline" size={20} color="#666" />
+                                <Text style={styles.logoutButtonText}>로그아웃</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity
+                                style={styles.loginButton}
+                                onPress={handleLogin}
+                            >
+                                <Ionicons name="log-in-outline" size={20} color="#7FD89A" />
+                                <Text style={styles.loginButtonText}>로그인</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     {/* 3D Character Area */}
@@ -274,37 +423,58 @@ export default function MainScreen() {
                     </View>
 
                     {/* Map Section with Friends Preview */}
-                    <View style={styles.mapOuterContainer}>
-                        <MapSection
-                            lastRunPath={lastRunPath}
-                            myLocation={myLocation}
-                            friends={friends}
-                            lastRunDate={lastRunDate}
-                            onPressFriends={() => router.push('/(tabs)/friends')}
-                        />
-                    </View>
+                    {isLoggedIn && (
+                        <View style={styles.mapOuterContainer}>
+                            <MapSection
+                                lastRunPath={lastRunPath}
+                                myLocation={myLocation}
+                                friends={friends}
+                                lastRunDate={lastRunDate}
+                                onPressFriends={() => router.push('/(tabs)/friends')}
+                            />
+                        </View>
+                    )}
 
                     {/* Stats Card */}
-                    <TouchableOpacity
-                        style={styles.statsCard}
-                        onPress={() => router.push('/history')}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.statsHeader}>
-                            <Text style={styles.statsTitle}>나의 기록</Text>
-                            <Text style={styles.detailButton}>최근 달리기</Text>
-                        </View>
-                        <Text style={styles.statsValue}>
-                            {totalDistance > 0
-                                ? `${totalDistance.toFixed(2)}km | ${formatTime(totalTime)}`
-                                : '아직 기록이 없습니다'}
-                        </Text>
-                        {totalDistance > 0 && (
-                            <Text style={styles.statsSubtext}>
-                                총 누적 거리 및 시간
+                    {isLoggedIn ? (
+                        <TouchableOpacity
+                            style={styles.statsCard}
+                            onPress={() => router.push('/(tabs)/history')}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.statsHeader}>
+                                <Text style={styles.statsTitle}>나의 기록</Text>
+                                <Text style={styles.detailButton}>최근 달리기</Text>
+                            </View>
+                            <Text style={styles.statsValue}>
+                                {totalDistance > 0
+                                    ? `${totalDistance.toFixed(2)}km | ${formatTime(totalTime)}`
+                                    : '아직 기록이 없습니다'}
                             </Text>
-                        )}
-                    </TouchableOpacity>
+                            {totalDistance > 0 && (
+                                <Text style={styles.statsSubtext}>
+                                    총 누적 거리 및 시간
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            style={styles.statsCard}
+                            onPress={handleLogin}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.statsHeader}>
+                                <Text style={styles.statsTitle}>나의 기록</Text>
+                                <Text style={styles.detailButton}>로그인 필요</Text>
+                            </View>
+                            <Text style={styles.statsValue}>
+                                로그인 후 기록을 확인하세요
+                            </Text>
+                            <Text style={styles.statsSubtext}>
+                                로그인하면 러닝 기록을 저장하고 확인할 수 있습니다
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                 </ScrollView>
             </SafeAreaView >
         </TabScreenLayout >
@@ -345,6 +515,34 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
         color: '#333',
+    },
+    logoutButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#F5F5F5',
+        gap: 6,
+    },
+    logoutButtonText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#666',
+    },
+    loginButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#E8F5E9',
+        gap: 6,
+    },
+    loginButtonText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#7FD89A',
     },
 
     characterContainer: {

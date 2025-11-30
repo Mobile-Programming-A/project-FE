@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+import { saveRunningRecord, migrateRecordsToFirestore } from '../services/runningRecordsService';
 import {
     Alert,
     Dimensions,
@@ -228,14 +229,10 @@ export default function RunningScreen() {
   // 러닝 기록 저장
   const handleSave = async () => {
     try {
-      // 기존 기록 불러오기
-      const existingRecordsJson = await AsyncStorage.getItem('runningRecords');
-      const existingRecords = existingRecordsJson ? JSON.parse(existingRecordsJson) : [];
-
-      // 시작 위치의 주소 가져오기 (역지오코딩)
-      let locationName = `RRC-${String(existingRecords.length + 1).padStart(3, '0')}`;
       const startCoords = pathCoords[0] || currentLocation;
 
+      // 시작 위치의 주소 가져오기 (역지오코딩)
+      let locationName = `RRC-${new Date().getTime()}`;
       if (startCoords) {
         try {
           const addressResults = await Location.reverseGeocodeAsync({
@@ -255,8 +252,10 @@ export default function RunningScreen() {
       }
 
       // 새 기록 객체 생성
+      // id는 Firestore가 자동 생성하므로 저장하지 않음
+      // locationName은 별도 필드로 저장
       const newRecord = {
-        id: locationName,
+        locationName: locationName, // id 대신 locationName으로 저장
         date: new Date().toISOString(),
         time: time,
         distance: distance,
@@ -266,9 +265,24 @@ export default function RunningScreen() {
         startLocation: startCoords,
       };
 
-      // 기록 추가 및 저장
-      const updatedRecords = [newRecord, ...existingRecords];
-      await AsyncStorage.setItem('runningRecords', JSON.stringify(updatedRecords));
+      // Firestore에 저장
+      await saveRunningRecord(newRecord);
+
+      // 마이그레이션: 기존 AsyncStorage 데이터가 있으면 Firestore로 이전
+      try {
+        const existingRecordsJson = await AsyncStorage.getItem('runningRecords');
+        if (existingRecordsJson) {
+          const existingRecords = JSON.parse(existingRecordsJson);
+          if (existingRecords.length > 0) {
+            await migrateRecordsToFirestore(existingRecords);
+            // 마이그레이션 완료 후 AsyncStorage 데이터 삭제 (선택사항)
+            // await AsyncStorage.removeItem('runningRecords');
+          }
+        }
+      } catch (migrationError) {
+        console.error('마이그레이션 중 오류:', migrationError);
+        // 마이그레이션 실패해도 새 기록은 저장되었으므로 계속 진행
+      }
 
       setShowCompletionModal(false);
 
@@ -326,7 +340,7 @@ export default function RunningScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.replace("/main")}
+            onPress={() => router.back()}
 
           >
             <Ionicons name="chevron-back" size={24} color="#333" />
@@ -343,7 +357,7 @@ export default function RunningScreen() {
           </View>
           <TouchableOpacity
             style={styles.menuButton}
-            onPress={() => router.push('/history')}
+            onPress={() => router.push('/(tabs)/history')}
           >
             <Ionicons name="time-outline" size={24} color="#333" />
           </TouchableOpacity>

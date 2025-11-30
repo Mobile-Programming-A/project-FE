@@ -1,11 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-
 import { useRouter } from 'expo-router';
-import { defaultCharacter } from '../data/characters';
-import React, { useEffect, useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -13,66 +11,61 @@ import {
     Image,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
-
-WebBrowser.maybeCompleteAuthSession();
+import { defaultCharacter } from '../data/characters';
+import { auth } from '../services/config';
 
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
-    
-    // Google 인증 요청 - iOS와 웹 클라이언트 ID 설정
-
-    const [request, response, promptAsync] = Google.useAuthRequest({
-  androidClientId: "656771928173-okuhoa8ugjk5h1hc9ln2hoig94j0.apps.googleusercontent.com",
-  iosClientId: "656771928173-okuhoa8ugjk5h1hc9ln2hoig94j0.apps.googleusercontent.com",
-  webClientId: "656771928173-3tdf4229ete02t5rkvvt7gmubcoh8e2.apps.googleusercontent.com",
-  redirectUri: "https://auth.expo.io/@seojung024/RunningApp",
-  scopes: ["profile", "email"],
-});
-
-
-    // 인증 응답 처리
-    useEffect(() => {
-        console.log('🔍 OAuth Response:', JSON.stringify(response, null, 2));
-
-        if (response?.type === 'success') {
-            console.log('✅ 로그인 성공!');
-            const { authentication } = response;
-            handleGoogleLoginSuccess(authentication);
-        } else if (response?.type === 'error') {
-            console.error('❌ 로그인 오류:', response.error);
-            Alert.alert('로그인 실패', `구글 로그인 중 오류가 발생했습니다.\n${response.error?.message || ''}`);
-            setIsLoading(false);
-        } else if (response?.type === 'dismiss' || response?.type === 'cancel') {
-            console.log('⚠️ 로그인 취소됨');
-            setIsLoading(false);
+    // 이메일/비밀번호 로그인
+    const handleLogin = async () => {
+        if (!email.trim() || !password.trim()) {
+            Alert.alert('입력 오류', '이메일과 비밀번호를 모두 입력해주세요.');
+            return;
         }
-    }, [response]);
 
-    // 구글 로그인 성공 처리
-    const handleGoogleLoginSuccess = async (authentication) => {
+        setIsLoading(true);
         try {
-            // 사용자 정보 가져오기
-            const userInfoResponse = await fetch(
-                'https://www.googleapis.com/oauth2/v2/userinfo',
-                {
-                    headers: { Authorization: `Bearer ${authentication.accessToken}` },
-                }
-            );
+            const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+            const user = userCredential.user;
 
-            const userInfo = await userInfoResponse.json();
-            console.log('사용자 정보:', userInfo);
+            // 사용자 이메일을 AsyncStorage에 저장
+            await AsyncStorage.setItem('userEmail', user.email || email.trim());
 
-            // 로그인 성공 - 메인 화면으로 이동
+            // Firestore에 사용자 정보가 없으면 생성
+            const { collection, doc, setDoc, getDoc } = await import('firebase/firestore');
+            const { db } = await import('../services/config');
+            
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (!userDoc.exists()) {
+                // 새 사용자 정보 생성
+                await setDoc(userDocRef, {
+                    email: user.email,
+                    name: user.displayName || user.email?.split('@')[0] || '사용자',
+                    avatar: 'avatar1',
+                    characterId: 1,
+                    level: 1,
+                    currentExp: 0,
+                    maxExp: 100,
+                    createdAt: new Date().toISOString(),
+                });
+            }
+
             Alert.alert(
                 '로그인 성공',
-                `환영합니다, ${userInfo.name}님!`,
+                `환영합니다, ${user.email}님!`,
                 [
                     {
                         text: '확인',
@@ -81,28 +74,28 @@ export default function LoginScreen() {
                 ]
             );
         } catch (error) {
-            console.error('사용자 정보 가져오기 실패:', error);
-            Alert.alert('오류', '사용자 정보를 가져오는데 실패했습니다.');
+            console.error('로그인 오류:', error);
+            let errorMessage = '로그인에 실패했습니다.';
+            
+            if (error.code === 'auth/user-not-found') {
+                errorMessage = '등록되지 않은 이메일입니다.';
+            } else if (error.code === 'auth/wrong-password') {
+                errorMessage = '비밀번호가 올바르지 않습니다.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = '올바른 이메일 형식이 아닙니다.';
+            } else if (error.code === 'auth/invalid-credential') {
+                errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다.';
+            }
+            
+            Alert.alert('로그인 실패', errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // 구글 로그인 버튼 클릭
-    const handleGoogleLogin = async () => {
-        setIsLoading(true);
-        try {
-            await promptAsync();
-        } catch (error) {
-            console.error('구글 로그인 오류:', error);
-            Alert.alert('오류', '구글 로그인을 시작할 수 없습니다.');
-            setIsLoading(false);
-        }
-    };
-
-    const handleStartPress = () => {
-        console.log('시작하기 버튼 클릭! 메인 화면으로 이동합니다.');
-        router.replace('/(tabs)/main');
+    // 회원가입 화면으로 이동
+    const handleSignUp = () => {
+        router.push('/signup');
     };
 
     return (
@@ -123,42 +116,73 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.bottomContainer}>
-                {/* 구글 로그인 버튼 */}
+                {/* 이메일 입력 */}
+                <View style={styles.inputContainer}>
+                    <Ionicons name="mail-outline" size={20} color="#999" style={styles.inputIcon} />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="이메일"
+                        placeholderTextColor="#999"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        editable={!isLoading}
+                    />
+                </View>
+
+                {/* 비밀번호 입력 */}
+                <View style={styles.inputContainer}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="비밀번호"
+                        placeholderTextColor="#999"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        editable={!isLoading}
+                    />
+                    <TouchableOpacity
+                        onPress={() => setShowPassword(!showPassword)}
+                        style={styles.eyeIcon}
+                    >
+                        <Ionicons
+                            name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                            size={20}
+                            color="#999"
+                        />
+                    </TouchableOpacity>
+                </View>
+
+                {/* 로그인 버튼 */}
                 <TouchableOpacity
-                    style={styles.googleButton}
-                    onPress={handleGoogleLogin}
-                    disabled={!request || isLoading}
+                    style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                    onPress={handleLogin}
+                    disabled={isLoading}
                 >
                     {isLoading ? (
-                        <ActivityIndicator color="#4285F4" />
+                        <ActivityIndicator color="#FFFFFF" />
                     ) : (
-                        <>
-                            <Ionicons name="logo-google" size={24} color="#4285F4" />
-                            <Text style={styles.googleButtonText}>Google로 로그인</Text>
-                        </>
+                        <Text style={styles.loginButtonText}>로그인</Text>
                     )}
                 </TouchableOpacity>
 
-                {/* 또는 구분선 */}
-                <View style={styles.dividerContainer}>
-                    <View style={styles.divider} />
-                    <Text style={styles.dividerText}>또는</Text>
-                    <View style={styles.divider} />
+                {/* 회원가입 링크 */}
+                <View style={styles.signupContainer}>
+                    <Text style={styles.signupText}>계정이 없으신가요? </Text>
+                    <TouchableOpacity onPress={handleSignUp} disabled={isLoading}>
+                        <Text style={styles.signupLink}>회원가입</Text>
+                    </TouchableOpacity>
                 </View>
-
-                {/* 시작하기 버튼 */}
-                <TouchableOpacity
-                    style={styles.kakaoButton}
-                    onPress={handleStartPress}
-                >
-                    <Text style={styles.kakaoButtonText}>로그인 없이 시작하기</Text>
-                </TouchableOpacity>
             </View>
         </View>
     );
 }
 
-// ... (styles는 동일) ...
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -173,17 +197,17 @@ const styles = StyleSheet.create({
         borderRadius: width * 1.5,
     },
     topContainer: {
-        flex: 2,
+        flex: 1.5,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 80,
+        paddingTop: 60,
         zIndex: 1,
     },
     character: {
-        width: width * 0.6,
-        height: width * 0.6,
+        width: width * 0.5,
+        height: width * 0.5,
         resizeMode: 'contain',
-        marginBottom: 20,
+        marginBottom: 15,
     },
     subtitle: {
         fontSize: 18,
@@ -191,64 +215,72 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     bottomContainer: {
-        flex: 1,
+        flex: 1.5,
         paddingHorizontal: 30,
-        paddingTop: 40,
+        paddingTop: 20,
         alignItems: 'center',
         zIndex: 2,
     },
-    googleButton: {
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#FFFFFF',
         borderRadius: 30,
         width: '100%',
-        paddingVertical: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-        gap: 12,
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        marginBottom: 15,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.1,
         shadowRadius: 3.84,
-        elevation: 5,
+        elevation: 3,
     },
-    googleButtonText: {
-        color: '#3C1E1E',
-        fontSize: 16,
-        fontWeight: '600',
+    inputIcon: {
+        marginRight: 12,
     },
-    dividerContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '100%',
-        marginVertical: 20,
-    },
-    divider: {
+    input: {
         flex: 1,
-        height: 1,
-        backgroundColor: '#CCCCCC',
+        fontSize: 16,
+        color: '#333',
     },
-    dividerText: {
-        marginHorizontal: 16,
-        fontSize: 14,
-        color: '#666666',
+    eyeIcon: {
+        padding: 5,
     },
-    kakaoButton: {
-        backgroundColor: '#FFFFFF',
+    loginButton: {
+        backgroundColor: '#7FD89A',
         borderRadius: 30,
         width: '100%',
         paddingVertical: 18,
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: 10,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,
         shadowRadius: 3.84,
         elevation: 5,
     },
-    kakaoButtonText: {
-        color: '#3C1E1E',
+    loginButtonDisabled: {
+        opacity: 0.6,
+    },
+    loginButtonText: {
+        color: '#FFFFFF',
         fontSize: 16,
+        fontWeight: '700',
+    },
+    signupContainer: {
+        flexDirection: 'row',
+        marginTop: 20,
+        alignItems: 'center',
+    },
+    signupText: {
+        fontSize: 14,
+        color: '#666',
+    },
+    signupLink: {
+        fontSize: 14,
+        color: '#7FD89A',
         fontWeight: '600',
     },
 });
