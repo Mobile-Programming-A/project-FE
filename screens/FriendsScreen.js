@@ -20,19 +20,14 @@ import {
   Modal,
   Platform,
   StatusBar,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
-  StyleSheet,    
 } from "react-native";
 
-import MapView, {
-  Marker,
-  Polyline,
-  PROVIDER_GOOGLE,
-} from "react-native-maps";
 import {
   addDoc,
   collection,
@@ -44,6 +39,11 @@ import {
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
+import MapView, {
+  Marker,
+  Polyline,
+  PROVIDER_GOOGLE,
+} from "react-native-maps";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { db } from "../services/config";
@@ -92,10 +92,10 @@ async function calculateOSRMRoute(start, waypoints, end) {
 }
 
 const formatPace = (secondsPerKm) => {
-    if (secondsPerKm === 0 || !isFinite(secondsPerKm)) return "0'00\"";
-    const mins = Math.floor(secondsPerKm / 60);
-    const secs = Math.floor(secondsPerKm % 60);
-    return `${mins}'${secs.toString().padStart(2, '0')}"`;
+  if (secondsPerKm === 0 || !isFinite(secondsPerKm)) return "0'00\"";
+  const mins = Math.floor(secondsPerKm / 60);
+  const secs = Math.floor(secondsPerKm % 60);
+  return `${mins}'${secs.toString().padStart(2, '0')}"`;
 };
 
 // Friend List Item 
@@ -172,7 +172,7 @@ export default function FriendsScreen() {
   const [routeLoading, setRouteLoading] = useState(false);
   const routeLoadingRef = useRef(false);
 
-  
+
   // 내 위치 
   useEffect(() => {
     const loadLocation = async () => {
@@ -204,7 +204,7 @@ export default function FriendsScreen() {
     loadLocation();
   }, []);
 
-  
+
   // Firestore 실시간 동기화 
   useEffect(() => {
     const friendsRef = collection(db, "friends");
@@ -224,11 +224,11 @@ export default function FriendsScreen() {
 
           const route = Array.isArray(f.route)
             ? f.route.filter(
-                (p) =>
-                  p &&
-                  (p.lat ?? p.latitude) &&
-                  (p.lng ?? p.longitude)
-              )
+              (p) =>
+                p &&
+                (p.lat ?? p.latitude) &&
+                (p.lng ?? p.longitude)
+            )
             : [];
 
           return {
@@ -244,7 +244,7 @@ export default function FriendsScreen() {
           };
         });
 
-        
+
         data.sort((a, b) => {
           if (a.isFavorite === b.isFavorite) return 0;
           return a.isFavorite ? -1 : 1;
@@ -261,7 +261,7 @@ export default function FriendsScreen() {
     return () => unsub();
   }, []);
 
- 
+
   const filteredFriends = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return friends;
@@ -269,12 +269,12 @@ export default function FriendsScreen() {
     return friends.filter((f) => f.name.toLowerCase().includes(q));
   }, [friends, searchQuery]);
 
-  
+
   //  즐겨찾기 
   const handleToggleFavorite = async (friend) => {
     const newValue = !friend.isFavorite;
 
-    
+
     setFriends((prev) =>
       prev.map((f) =>
         f.id === friend.id ? { ...f, isFavorite: newValue } : f
@@ -285,7 +285,7 @@ export default function FriendsScreen() {
       prev?.id === friend.id ? { ...prev, isFavorite: newValue } : prev
     );
 
-    
+
     try {
       await updateDoc(doc(db, "friends", friend.id), {
         isFavorite: newValue,
@@ -293,7 +293,7 @@ export default function FriendsScreen() {
     } catch (e) {
       console.log("❌ 즐겨찾기 업데이트 실패:", e);
 
-    
+
       setFriends((prev) =>
         prev.map((f) =>
           f.id === friend.id ? { ...f, isFavorite: !newValue } : f
@@ -421,6 +421,14 @@ export default function FriendsScreen() {
       <View
         style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
       >
+        <TouchableOpacity onPress={() => router.replace("/(tabs)/main")}>
+          <Ionicons name="chevron-back" size={26} color="#1C1C1C" />
+        </TouchableOpacity>
+
+        <Text style={{ fontSize: 22, fontWeight: "bold", color: "#1C1C1C" }}>
+          친구
+        </Text>
+
         <ActivityIndicator size="large" color="#71D9A1" />
         <Text style={{ marginTop: 12, color: "#666" }}>
           {loading ? "친구 불러오는 중..." : "내 위치 불러오는 중..."}
@@ -475,11 +483,11 @@ export default function FriendsScreen() {
               paddingVertical: 8,
               ...(Platform.OS === "ios"
                 ? {
-                    shadowColor: "#000",
-                    shadowOpacity: 0.06,
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowRadius: 4,
-                  }
+                  shadowColor: "#000",
+                  shadowOpacity: 0.06,
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowRadius: 4,
+                }
                 : { elevation: 2 }),
             }}
           >
@@ -526,9 +534,9 @@ export default function FriendsScreen() {
                   displayRoute.length > 1
                     ? displayRoute
                     : selectedFriend.route.map((p) => ({
-                        latitude: p.lat,
-                        longitude: p.lng,
-                      }))
+                      latitude: p.lat,
+                      longitude: p.lng,
+                    }))
                 }
                 strokeColor="#71D9A1"
                 strokeColors={["#71D9A1"]}
@@ -634,7 +642,7 @@ export default function FriendsScreen() {
                       height: 70,
                       borderRadius: 35,
                       marginRight: 15,
-                      
+
                     }}
                   />
 
@@ -646,7 +654,7 @@ export default function FriendsScreen() {
                           fontSize: 20,
                           fontWeight: "700",
                           maxWidth: 140,
-                          
+
                         }}
                       >
                         {selectedFriend.name}
@@ -661,7 +669,7 @@ export default function FriendsScreen() {
                             selectedFriend.isFavorite
                               ? "star"
                               : "star-outline"
-                              
+
                           }
                           size={20}
                           color={
@@ -720,8 +728,8 @@ export default function FriendsScreen() {
                 <View style={{ alignItems: "center" }}>
                   <Ionicons name="speedometer-outline" size={22} color="#6B7FFF" />
                   <Text style={{ fontWeight: "700", marginTop: 6 }}>
-  {formatPace(selectedFriend.stats.dist)} /km
-</Text>
+                    {formatPace(selectedFriend.stats.dist)} /km
+                  </Text>
 
                   <Text style={{ color: "#666", fontSize: 12 }}>평균 페이스</Text>
                 </View>
@@ -755,7 +763,7 @@ export default function FriendsScreen() {
                 color: "#666",
                 marginTop: 12,
                 textAlign: "center",
-                
+
               }}
             >
               {searchQuery ? "검색 결과가 없습니다" : "아직 친구가 없습니다"}
@@ -779,8 +787,8 @@ export default function FriendsScreen() {
                 item={item}
                 isSelected={selectedFriend?.id === item.id}
                 onPress={handleSelectFriend}
-                
-                
+
+
               />
             )}
           />
@@ -835,7 +843,7 @@ export default function FriendsScreen() {
                 placeholder="친구 ID 입력"
                 placeholderTextColor="rgba(255,255,255,0.5)"
                 style={{
-                  backgroundColor: "rgba(255,255,255,0.15)",  
+                  backgroundColor: "rgba(255,255,255,0.15)",
                   borderWidth: 1,
                   borderColor: "rgba(255,255,255,0.3)",
                   borderRadius: 10,
@@ -855,9 +863,9 @@ export default function FriendsScreen() {
                   borderRadius: 20,
                   paddingVertical: 10,
                   alignItems: "center",
-                  width: "60%",           
-                  alignSelf: "center",  
-                  
+                  width: "60%",
+                  alignSelf: "center",
+
                 }}
               >
                 <Text style={{ fontWeight: "600", color: "#000" }}>

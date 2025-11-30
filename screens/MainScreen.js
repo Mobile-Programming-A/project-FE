@@ -1,19 +1,22 @@
 // screens/MainScreen.js
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
-  collection,
-  getDocs,
-  onSnapshot,
-  query,
-  where,
-  orderBy,
+    collection,
+    getDocs,
+    onSnapshot,
+    orderBy,
+    query,
+    where,
 } from "firebase/firestore";
-import React, { useCallback, useState, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Dimensions,
   Image,
   SafeAreaView,
@@ -30,13 +33,13 @@ import Svg, { Path } from "react-native-svg";
 import MapSection from "../components/MapSection";
 import TabScreenLayout from "../components/TabScreenLayout";
 import {
-  characters,
-  defaultCharacter,
-  getCharacterById,
-  getProfileImageById,
-  profileImages,
+    characters,
+    defaultCharacter,
+    getCharacterById,
+    getProfileImageById,
+    profileImages,
 } from "../data/characters";
-import { db } from "../services/config";
+import { auth, db } from "../services/config";
 
 const { width, height } = Dimensions.get("window");
 
@@ -104,6 +107,7 @@ export default function MainScreen() {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [friends, setFriends] = useState([]);
   const [myLocation, setMyLocation] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isFacingRight, setIsFacingRight] = useState(true);
   const [currentAnimationStyle, setCurrentAnimationStyle] = useState(0);
   const [isWinking, setIsWinking] = useState(false);
@@ -123,6 +127,21 @@ export default function MainScreen() {
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * encouragingMessages.length);
     setEncouragingMessage(encouragingMessages[randomIndex]);
+  }, []);
+
+  // 인증 상태 확인
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+      if (!user) {
+        // 로그아웃 상태일 때 기록 초기화
+        setTotalDistance(0);
+        setTotalTime(0);
+        setLastRunDate(null);
+        setLastRunPath(null);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   // 🎭 캐릭터 애니메이션 (4가지 스타일)
@@ -479,11 +498,11 @@ export default function MainScreen() {
             // ✔ route 정제해서 전달
             const cleanedRoute = Array.isArray(f.route)
               ? f.route.filter(
-                  (p) =>
-                    p &&
-                    (p.lat ?? p.latitude) &&
-                    (p.lng ?? p.longitude)
-                )
+                (p) =>
+                  p &&
+                  (p.lat ?? p.latitude) &&
+                  (p.lng ?? p.longitude)
+              )
               : [];
 
             return {
@@ -656,6 +675,43 @@ export default function MainScreen() {
     router.push("/friends");
   };
 
+  // 로그아웃 처리
+  const handleLogout = async () => {
+    Alert.alert(
+      "로그아웃",
+      "정말 로그아웃하시겠습니까?",
+      [
+        {
+          text: "취소",
+          style: "cancel",
+        },
+        {
+          text: "로그아웃",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              await AsyncStorage.removeItem("userEmail");
+              // 기록 초기화
+              setTotalDistance(0);
+              setTotalTime(0);
+              setLastRunDate(null);
+              setLastRunPath(null);
+            } catch (error) {
+              console.error("로그아웃 실패:", error);
+              Alert.alert("오류", "로그아웃에 실패했습니다.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // 로그인 화면으로 이동
+  const handleLogin = () => {
+    router.replace("/");
+  };
+
   // 🎯 캐릭터 클릭 상호작용
   const handleCharacterPress = () => {
     // 랜덤 응원 메시지 변경
@@ -757,7 +813,13 @@ export default function MainScreen() {
             <View style={styles.header}>
               <TouchableOpacity
                 style={styles.profileContainer}
-                onPress={() => router.push("/Character-custom")}
+                onPress={() => {
+                  if (isLoggedIn) {
+                    router.push("/Character-custom");
+                  } else {
+                    handleLogin();
+                  }
+                }}
               >
                 <Image
                   source={
@@ -768,11 +830,29 @@ export default function MainScreen() {
                   style={styles.profileImage}
                 />
                 <Text style={styles.profileName}>
-                  {selectedCharacter?.name ?? defaultCharacter.name}
+                  {isLoggedIn
+                    ? selectedCharacter?.name ?? defaultCharacter.name
+                    : "로그인이 필요합니다"}
                 </Text>
               </TouchableOpacity>
 
-              <View style={styles.chatBubble} />
+              {isLoggedIn ? (
+                <TouchableOpacity
+                  style={styles.logoutButton}
+                  onPress={handleLogout}
+                >
+                  <Ionicons name="log-out-outline" size={20} color="#666" />
+                  <Text style={styles.logoutButtonText}>로그아웃</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.loginButton}
+                  onPress={handleLogin}
+                >
+                  <Ionicons name="log-in-outline" size={20} color="#7FD89A" />
+                  <Text style={styles.loginButtonText}>로그인</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* 캐릭터 + 말풍선 */}
@@ -933,6 +1013,34 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
   },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#F5F5F5",
+    gap: 6,
+  },
+  logoutButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#666",
+  },
+  loginButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#E8F5E9",
+    gap: 6,
+  },
+  loginButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#7FD89A",
+  },
 
   characterContainer: {
     alignItems: "center",
@@ -1011,7 +1119,7 @@ const styles = StyleSheet.create({
     borderRightColor: "transparent",
     borderTopColor: "#FFF",
     marginTop: -1,
-    
+
   },
   character: {
     width: 150,
@@ -1029,8 +1137,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
-    
-    
+
+
   },
   statsCard: {
     marginHorizontal: 20,
@@ -1048,7 +1156,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
-    
+
   },
   statsTitle: {
     fontSize: 18,

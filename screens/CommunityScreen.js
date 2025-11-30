@@ -9,6 +9,7 @@ import TrendingShoesDetails from "./community/TrendingShoesDetails";
 import RunningCourseRecommend from "./community/RunningCourseRecommend";
 import RunningCourseDetail from "./community/RunningCourseDetail";
 import TrendingCourses from "./community/TrendingCourses";
+import LikedCourses from "./community/LikedCourses";
 
 const Stack = createStackNavigator();
 export default function CommunityScreen() {
@@ -34,6 +35,7 @@ export default function CommunityScreen() {
         <Stack.Screen name="RunningCourseRecommend" component={RunningCourseRecommend} />
         <Stack.Screen name="RunningCourseDetail" component={RunningCourseDetail} />
         <Stack.Screen name="TrendingCourses" component={TrendingCourses} />
+        <Stack.Screen name="LikedCourses" component={LikedCourses} />
       </Stack.Navigator>
     </View>
   );
