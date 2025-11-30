@@ -1,8 +1,9 @@
 // firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { initializeAuth, getReactNativePersistence } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -24,8 +25,10 @@ const app = initializeApp(firebaseConfig);
 // Firestore 데이터베이스 초기화
 export const db = getFirestore(app);
 
-// Firebase Authentication 초기화
-export const auth = getAuth(app);
+// Firebase Authentication 초기화 (AsyncStorage persistence 포함)
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
 
 // Firebase Storage 초기화
 export const storage = getStorage(app, "gs://mango-f4314.appspot.com");
