@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
+import Svg, { Path } from "react-native-svg";
+
 import {
     ActivityIndicator,
     Alert,
@@ -26,6 +28,39 @@ export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+
+
+        // 풀잎 벡터
+    const GrassVector = ({ left, bottom, rotation = 0, scale = 1 }) => (
+    <View
+        style={[
+        styles.grassVector,
+        {
+            left,
+            bottom,
+            transform: [{ rotate: `${rotation}deg` }, { scale }],
+        },
+        ]}
+    >
+        <Svg width="23" height="23" viewBox="0 0 25 25">
+        <Path
+            d="M 10 25 Q 8 18 5 10 Q 4 8 5 7 Q 6 6 7 8 Q 10 15 12 22"
+            fill="#8BAF4C"
+            opacity={0.5}
+        />
+        <Path
+            d="M 15 25 Q 14 16 12 8 Q 11.5 5 13 4 Q 14.5 3 15 6 Q 17 14 16 22"
+            fill="#9BC25C"
+            opacity={0.6}
+        />
+        <Path
+            d="M 20 25 Q 22 18 25 10 Q 26 8 25 7 Q 24 6 23 8 Q 20 15 18 22"
+            fill="#7A9E3B"
+            opacity={0.5}
+        />
+        </Svg>
+    </View>
+    );
 
     // 이메일/비밀번호 로그인
     const handleLogin = async () => {
@@ -101,19 +136,47 @@ export default function LoginScreen() {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={['#D4F7C5', '#F0FDEF']}
+                colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+                locations={[0, 0.3, 1]}
                 style={StyleSheet.absoluteFillObject}
-            />
+                />
 
             <View style={styles.ellipseBackground} />
+             {/* 풀잎 랜덤 배치 */}
+                <GrassVector left={30} bottom={height * 0.6} rotation={-15} scale={1.2} />
+                <GrassVector left={80} bottom={height * 0.58} rotation={5} scale={0.9} />
+                <GrassVector left={140} bottom={height * 0.6} rotation={5} scale={0.9} />
+                <GrassVector left={width - 100} bottom={height * 0.58} rotation={10} scale={1.1} />
+                <GrassVector left={width - 50} bottom={height * 0.59} rotation={-8} scale={0.95} />
+                <GrassVector left={4} bottom={height * 0.48} rotation={12} scale={1.0} />
+                <GrassVector left={width - 138} bottom={height * 0.62} rotation={-12} scale={1.15} />
+                <GrassVector left={120} bottom={height * 0.52} rotation={8} scale={0.85} />
+                <GrassVector left={width / 2} bottom={height * 0.54} rotation={-5} scale={1.05} />
+                <GrassVector left={width - 30} bottom={height * 0.50} rotation={-5} scale={1.05} />
 
             <View style={styles.topContainer}>
-                <Image
-                    source={defaultCharacter.image}
-                    style={styles.character}
-                />
-                <Text style={styles.subtitle}>망키와 함께 달려보세요!</Text>
+
+           
+            <View style={styles.speechBubbleContainer}>
+                <View style={styles.speechBubble}>
+                    <Text style={styles.speechBubbleText}>
+                        망키와 함께 달려보세요!
+                    </Text>
+                </View>
+                <View style={styles.speechBubbleTail} />
             </View>
+
+            <Image
+                source={defaultCharacter.image}
+                style={styles.character}
+            />
+
+        </View>
+
+
+
+
+
 
             <View style={styles.bottomContainer}>
                 {/* 이메일 입력 */}
@@ -207,8 +270,10 @@ const styles = StyleSheet.create({
         width: width * 0.5,
         height: width * 0.5,
         resizeMode: 'contain',
+        marginTop: 15,  
         marginBottom: 15,
     },
+
     subtitle: {
         fontSize: 18,
         color: '#333',
@@ -280,7 +345,68 @@ const styles = StyleSheet.create({
     },
     signupLink: {
         fontSize: 14,
-        color: '#7FD89A',
+        color: '#888', 
         fontWeight: '600',
     },
-});
+    speechBubbleContainer: {
+        alignItems: 'center',
+        marginTop: 55, 
+        marginBottom: -10,
+    },
+
+
+
+    speechBubble: {
+        backgroundColor: '#fff',
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 15,
+        maxWidth: width * 0.6,
+            shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+
+
+    speechBubbleText: {
+        fontSize: 14,
+        color: '#333',
+    },
+
+    speechBubbleTail: {
+        width: 0,
+        height: 0,
+        borderLeftWidth: 10,
+        borderRightWidth: 10,
+        borderTopWidth: 12,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderTopColor: '#fff',
+        marginTop: -2,
+    },
+    backgroundGradient: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    },
+
+    ellipseBackground: {
+    position: "absolute",
+    bottom: -height * 0.1,
+    left: -width * 0.45,
+    right: -width * 0.45,
+    height: height * 0.77,
+    backgroundColor: "#C2D88B",
+    borderRadius: width * 2,
+    },
+
+    grassVector: {
+    position: "absolute",
+    },
+
+
+    });
