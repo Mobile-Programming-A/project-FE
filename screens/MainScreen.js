@@ -99,6 +99,7 @@ export default function MainScreen() {
   const [selectedProfileImage, setSelectedProfileImage] = useState(null);
 
   const [encouragingMessage, setEncouragingMessage] = useState("");
+    const [userName, setUserName] = useState('홍길동');
 
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [friends, setFriends] = useState([]);
@@ -551,7 +552,7 @@ export default function MainScreen() {
       setSelectedCharacter(characters[0]);
     }
   };
-
+/*
   const loadSelectedProfileImage = async () => {
     try {
       const savedId = await AsyncStorage.getItem("selectedProfileImageId");
@@ -563,9 +564,29 @@ export default function MainScreen() {
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("email", "==", userEmail));
       const snap = await getDocs(q);
+      */
+    // 저장된 프로필 사진 불러오기
+    const loadSelectedProfileImage = async () => {
+        try {
+            // AsyncStorage에서 먼저 확인
+            const savedProfileImageId = await AsyncStorage.getItem('selectedProfileImageId');
+            if (savedProfileImageId) {
+                const profileImage = getProfileImageById(savedProfileImageId);
+                setSelectedProfileImage(profileImage || profileImages[0]);
+            } else {
+                setSelectedProfileImage(profileImages[0]);
+            }
 
-      if (!snap.empty) {
-        const userData = snap.docs[0].data();
+
+            // Firebase users 컬렉션에서도 확인하여 동기화
+            const userEmail = await AsyncStorage.getItem('userEmail') || 'hong@example.com';
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('email', '==', userEmail));
+            const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userData = querySnapshot.docs[0].data();
+
 
         if (userData.avatar) {
           const avatarId = userData.avatar.replace("avatar", "");
@@ -582,6 +603,10 @@ export default function MainScreen() {
             setSelectedCharacter(c);
             await AsyncStorage.setItem("selectedCharacterId", userData.characterId.toString());
           }
+        }
+        // Firebase의 사용자 이름 정보로 업데이트
+        if (userData.name) {
+            setUserName(userData.name);
         }
       }
     } catch (error) {
@@ -908,6 +933,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
   },
+
   characterContainer: {
     alignItems: "center",
     paddingVertical: 20,
@@ -917,6 +943,41 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+    speechBubbleContainer: {
+        position: 'relative',
+        marginBottom: 15,
+        alignItems: 'center',
+    },
+    speechBubble: {
+        backgroundColor: '#FFF',
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        maxWidth: width * 0.7,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    speechBubbleText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#333',
+        textAlign: 'center',
+    },
+    speechBubbleTail: {
+        width: 0,
+        height: 0,
+        borderLeftWidth: 10,
+        borderRightWidth: 10,
+        borderTopWidth: 10,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderTopColor: '#FFF',
+        marginTop: -1,
+        position: 'relative',
+    },
   speechBubbleContainer: {
     position: "relative",
     marginBottom: 15,
