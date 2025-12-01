@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 
 import { useCallback, useState } from 'react';
 import {
@@ -56,6 +56,8 @@ export default function HistoryScreen() {
                         const existingRecords = JSON.parse(existingRecordsJson);
                         if (existingRecords.length > 0) {
                             await migrateRecordsToFirestore(existingRecords);
+                            // 마이그레이션 완료 후 AsyncStorage 정리 (중복 복원 방지)
+                            await AsyncStorage.removeItem('runningRecords');
                             // 마이그레이션 완료 표시
                             await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
                             // 마이그레이션 후 다시 불러오기
