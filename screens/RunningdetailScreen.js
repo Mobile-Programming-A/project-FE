@@ -1,5 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from 'expo-router';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import {
     Dimensions,
     SafeAreaView,
@@ -10,15 +14,39 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { LinearGradient } from "expo-linear-gradient";
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import TabScreenLayout from '../components/TabScreenLayout';
+import { db } from '../services/config';
 
 const { width, height } = Dimensions.get('window');
 
 export default function RunningDetailScreen({ route }) {
     const router = useRouter();
     const { record } = route.params;
+    const [userName, setUserName] = useState('사용자');
+
+    // 사용자 이름 불러오기
+    useEffect(() => {
+        loadUserName();
+    }, []);
+
+    const loadUserName = async () => {
+        try {
+            const userEmail = await AsyncStorage.getItem('userEmail') || 'hong@example.com';
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('email', '==', userEmail));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                if (userData.name) {
+                    setUserName(userData.name);
+                }
+            }
+        } catch (error) {
+            console.error('사용자 이름 불러오기 실패:', error);
+        }
+    };
 
     // 시간 포맷
     const formatTime = (seconds) => {
@@ -118,7 +146,7 @@ export default function RunningDetailScreen({ route }) {
                 <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                     {/* 기록 ID 및 날짜 */}
                     <View style={styles.titleSection}>
-                        <Text style={styles.recordId}>{record.id}</Text>
+                        <Text style={styles.recordId}>{record.locationName || record.id}</Text>
                         <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
                     </View>
 
@@ -173,7 +201,7 @@ export default function RunningDetailScreen({ route }) {
                         <View style={styles.mainStatIcon}>
                             <Ionicons name="navigate" size={32} color="#71D9A1" />
                         </View>
-                        <Text style={styles.mainStatLabel}>고래가 좋은 세부</Text>
+                        <Text style={styles.mainStatLabel}>{userName}님의 세부 기록</Text>
                         <Text style={styles.mainStatValue}>{record.distance.toFixed(2)}km</Text>
                         <Text style={styles.mainStatSubtext}>
                             {formatDateTime(record.date)} • {formatTime(record.time)}

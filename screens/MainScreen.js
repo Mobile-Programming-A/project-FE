@@ -40,6 +40,7 @@ import {
     profileImages,
 } from "../data/characters";
 import { auth, db } from "../services/config";
+import { getRunningRecords } from "../services/runningRecordsService";
 
 const { width, height } = Dimensions.get("window");
 
@@ -639,14 +640,19 @@ export default function MainScreen() {
   // ----------------------------------
   const loadRecords = async () => {
     try {
-      const json = await AsyncStorage.getItem("runningRecords");
-      if (!json) return;
+      // Firestore에서 기록 불러오기
+      const records = await getRunningRecords();
+      
+      if (!records || records.length < 1) {
+        setTotalDistance(0);
+        setTotalTime(0);
+        setLastRunDate(null);
+        setLastRunPath(null);
+        return;
+      }
 
-      const records = JSON.parse(json);
-      if (records.length < 1) return;
-
-      const distance = records.reduce((sum, r) => sum + r.distance, 0);
-      const time = records.reduce((sum, r) => sum + r.time, 0);
+      const distance = records.reduce((sum, r) => sum + (r.distance || 0), 0);
+      const time = records.reduce((sum, r) => sum + (r.time || 0), 0);
 
       setTotalDistance(distance);
       setTotalTime(time);
@@ -660,6 +666,11 @@ export default function MainScreen() {
       setLastRunPath(lastRecord.pathCoords?.length > 0 ? lastRecord.pathCoords : null);
     } catch (error) {
       console.error("기록 불러오기 실패:", error);
+      // 에러 발생 시 기본값 설정
+      setTotalDistance(0);
+      setTotalTime(0);
+      setLastRunDate(null);
+      setLastRunPath(null);
     }
   };
 
@@ -831,7 +842,7 @@ export default function MainScreen() {
                 />
                 <Text style={styles.profileName}>
                   {isLoggedIn
-                    ? selectedCharacter?.name ?? defaultCharacter.name
+                    ? userName || "사용자"
                     : "로그인이 필요합니다"}
                 </Text>
               </TouchableOpacity>

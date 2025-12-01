@@ -46,6 +46,8 @@ export default function AllRecordsScreen() {
                         const existingRecords = JSON.parse(existingRecordsJson);
                         if (existingRecords.length > 0) {
                             await migrateRecordsToFirestore(existingRecords);
+                            // 마이그레이션 완료 후 AsyncStorage 정리 (중복 복원 방지)
+                            await AsyncStorage.removeItem('runningRecords');
                             // 마이그레이션 후 다시 불러오기
                             const updatedRecords = await getRunningRecords();
                             setRecords(updatedRecords);
