@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: ROUTE_COLOR,
 
-    shadowColor: "#000",
+    shadowColor: "#fff",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
     shadowRadius: 4.5,

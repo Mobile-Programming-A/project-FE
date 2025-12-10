@@ -148,12 +148,24 @@ export const migrateRecordsToFirestore = async (asyncStorageRecords) => {
     
     // 기존 Firestore 기록 확인
     const existingRecords = await getRunningRecords();
-    const existingDates = new Set(existingRecords.map(r => r.date));
+    // 날짜와 시간, 거리를 조합하여 고유 키 생성 (더 정확한 중복 체크)
+    const existingKeys = new Set(
+      existingRecords.map(r => {
+        const date = r.date || '';
+        const time = r.time || 0;
+        const distance = r.distance || 0;
+        return `${date}_${time}_${distance.toFixed(2)}`;
+      })
+    );
 
     // 중복되지 않은 기록만 저장
-    const recordsToMigrate = asyncStorageRecords.filter(record => 
-      !existingDates.has(record.date)
-    );
+    const recordsToMigrate = asyncStorageRecords.filter(record => {
+      const date = record.date || '';
+      const time = record.time || 0;
+      const distance = record.distance || 0;
+      const key = `${date}_${time}_${distance.toFixed(2)}`;
+      return !existingKeys.has(key);
+    });
 
     if (recordsToMigrate.length === 0) {
       console.log('마이그레이션할 기록이 없습니다.');

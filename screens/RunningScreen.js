@@ -230,6 +230,34 @@ export default function RunningScreen() {
     setShowCompletionModal(true);
   };
 
+  // 기록 버튼: 현재 러닝을 저장하고 종료
+  const handleRecord = () => {
+    if (distance < 0.01) {
+      Alert.alert('알림', '기록할 거리가 너무 짧습니다. 최소 0.01km 이상 달려주세요.');
+      return;
+    }
+    
+    Alert.alert(
+      '기록 저장',
+      '현재 러닝을 저장하고 종료하시겠습니까?',
+      [
+        {
+          text: '취소',
+          style: 'cancel'
+        },
+        {
+          text: '저장',
+          onPress: async () => {
+            // 러닝 중지
+            setRunningState('completed');
+            // 바로 저장
+            await handleSave();
+          }
+        }
+      ]
+    );
+  };
+
   // 러닝 기록 저장
   const handleSave = async () => {
     try {
@@ -272,15 +300,27 @@ export default function RunningScreen() {
       // Firestore에 저장
       await saveRunningRecord(newRecord);
 
-      // 마이그레이션: 기존 AsyncStorage 데이터가 있으면 Firestore로 이전
+      // 마이그레이션: 기존 AsyncStorage 데이터가 있으면 Firestore로 이전 (한 번만 실행)
+      // HistoryScreen에서 이미 처리하므로 여기서는 플래그 확인만
       try {
-        const existingRecordsJson = await AsyncStorage.getItem('runningRecords');
-        if (existingRecordsJson) {
-          const existingRecords = JSON.parse(existingRecordsJson);
-          if (existingRecords.length > 0) {
-            await migrateRecordsToFirestore(existingRecords);
-            // 마이그레이션 완료 후 AsyncStorage 데이터 삭제 (선택사항)
-            // await AsyncStorage.removeItem('runningRecords');
+        const migrationDone = await AsyncStorage.getItem('migrationToFirestoreDone');
+        if (!migrationDone) {
+          const existingRecordsJson = await AsyncStorage.getItem('runningRecords');
+          if (existingRecordsJson) {
+            const existingRecords = JSON.parse(existingRecordsJson);
+            if (existingRecords.length > 0) {
+              await migrateRecordsToFirestore(existingRecords);
+              // 마이그레이션 완료 후 AsyncStorage 정리 (중복 복원 방지)
+              await AsyncStorage.removeItem('runningRecords');
+              // 마이그레이션 완료 표시
+              await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
+            } else {
+              // 기록이 없어도 마이그레이션 완료 표시
+              await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
+            }
+          } else {
+            // AsyncStorage에 기록이 없어도 마이그레이션 완료 표시
+            await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
           }
         }
       } catch (migrationError) {
@@ -569,7 +609,10 @@ export default function RunningScreen() {
                   />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.bookmarkButton}>
+                <TouchableOpacity 
+                  style={styles.bookmarkButton}
+                  onPress={handleRecord}
+                >
                   <Ionicons name="bookmark" size={28} color="#FFF" />
                 </TouchableOpacity>
 
@@ -591,36 +634,90 @@ export default function RunningScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalIcon}>
-                <Ionicons name="flag" size={40} color="#6B7FFF" />
+                <Ionicons 
+                  name={distance < 0.01 ? "close-circle" : "flag"} 
+                  size={40} 
+                  color={distance < 0.01 ? "#DC6B6B" : "#6B7FFF"} 
+                />
               </View>
 
-              <Text style={styles.modalTitle}>러닝 완료!</Text>
+              <Text style={styles.modalTitle}>
+                {distance < 0.01 ? "러닝 기록 없음" : "러닝 완료!"}
+              </Text>
 
-              <View style={styles.modalStats}>
-                <View style={styles.modalStatRow}>
-                  <Text style={styles.modalStatLabel}>거리</Text>
-                  <Text style={styles.modalStatValue}>{distance.toFixed(2)} km</Text>
+              {distance < 0.01 ? (
+                <View style={styles.modalWarningContainer}>
+                  <Text style={styles.modalWarningText}>
+                    기록할 거리가 너무 짧습니다.{'\n'}
+                    최소 0.01km 이상 달려야 기록이 저장됩니다.
+                  </Text>
                 </View>
-                <View style={styles.modalStatRow}>
-                  <Text style={styles.modalStatLabel}>시간</Text>
-                  <Text style={styles.modalStatValue}>{formatTime(time)}</Text>
+              ) : (
+                <View style={styles.modalStats}>
+                  <View style={styles.modalStatRow}>
+                    <Text style={styles.modalStatLabel}>거리</Text>
+                    <Text style={styles.modalStatValue}>{distance.toFixed(2)} km</Text>
+                  </View>
+                  <View style={styles.modalStatRow}>
+                    <Text style={styles.modalStatLabel}>시간</Text>
+                    <Text style={styles.modalStatValue}>{formatTime(time)}</Text>
+                  </View>
+                  <View style={styles.modalStatRow}>
+                    <Text style={styles.modalStatLabel}>페이스</Text>
+                    <Text style={styles.modalStatValue}>
+                      {pace > 0 ? `${formatPace(pace)} /km` : '-'}
+                    </Text>
+                  </View>
+                  <View style={styles.modalStatRow}>
+                    <Text style={styles.modalStatLabel}>칼로리</Text>
+                    <Text style={styles.modalStatValue}>{calories} kcal</Text>
+                  </View>
                 </View>
-                <View style={styles.modalStatRow}>
-                  <Text style={styles.modalStatLabel}>페이스</Text>
-                  <Text style={styles.modalStatValue}>{formatPace(pace)} /km</Text>
-                </View>
-                <View style={styles.modalStatRow}>
-                  <Text style={styles.modalStatLabel}>칼로리</Text>
-                  <Text style={styles.modalStatValue}>{calories} kcal</Text>
-                </View>
+              )}
+
+              <View style={styles.modalButtonContainer}>
+                {distance < 0.01 ? (
+                  <TouchableOpacity
+                    style={[styles.confirmButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowCompletionModal(false);
+                      setRunningState('ready');
+                      // 초기화
+                      setTime(0);
+                      setDistance(0);
+                      setPace(0);
+                      setCalories(0);
+                      setPathCoords([]);
+                    }}
+                  >
+                    <Text style={styles.confirmButtonText}>확인</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.confirmButton, styles.cancelButton]}
+                      onPress={() => {
+                        setShowCompletionModal(false);
+                        setRunningState('ready');
+                        // 초기화
+                        setTime(0);
+                        setDistance(0);
+                        setPace(0);
+                        setCalories(0);
+                        setPathCoords([]);
+                      }}
+                    >
+                      <Text style={[styles.confirmButtonText, styles.cancelButtonText]}>취소</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.confirmButton}
+                      onPress={handleSave}
+                    >
+                      <Text style={styles.confirmButtonText}>저장하기</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
-
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={handleSave}
-              >
-                <Text style={styles.confirmButtonText}>저장하기</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -889,8 +986,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  confirmButton: {
+  modalWarningContainer: {
     width: '100%',
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: '#FFF5F5',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFE0E0',
+  },
+  modalWarningText: {
+    fontSize: 14,
+    color: '#DC6B6B',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalButtonContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  confirmButton: {
+    flex: 1,
     height: 50,
     backgroundColor: '#6B7FFF',
     borderRadius: 12,
@@ -901,5 +1018,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
+  },
+  cancelButton: {
+    backgroundColor: '#F0F0F0',
+  },
+  cancelButtonText: {
+    color: '#666',
   },
 });
