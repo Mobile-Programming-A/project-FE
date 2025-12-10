@@ -6,6 +6,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { saveRunningRecord, migrateRecordsToFirestore } from '../services/runningRecordsService';
+import { completeMission } from '../services/userLevelService';
+import { auth } from '../services/config';
 import {
     Alert,
     Dimensions,
@@ -286,26 +288,82 @@ export default function RunningScreen() {
         // 마이그레이션 실패해도 새 기록은 저장되었으므로 계속 진행
       }
 
-      setShowCompletionModal(false);
+      // 미션 체크 및 경험치 지급
+      const completedMissions = [];
+      let totalExpGained = 0;
+      let finalResult = null;
 
-      Alert.alert(
-        '저장 완료',
-        '러닝 기록이 저장되었습니다!',
-        [
-          {
-            text: '확인',
-            onPress: () => {
-              // 초기화
-              setTime(0);
-              setDistance(0);
-              setPace(0);
-              setCalories(0);
-              setPathCoords([]);
-              setRunningState('ready');
+      try {
+        const userId = auth.currentUser?.uid;
+        if (userId) {
+          // 2km 달리기 미션 체크
+          if (distance >= 2.0) {
+            const result = await completeMission(userId, '2km 달리기 완주', 50, 'mission_1');
+            if (result.success && !result.alreadyCompleted) {
+              completedMissions.push('2km 달리기 완주');
+              totalExpGained += 50;
+              finalResult = result;
             }
           }
-        ]
-      );
+
+          // 10분 달리기 미션 체크
+          if (time >= 600) {
+            const result = await completeMission(userId, '10분 달리기 완주', 50, 'mission_2');
+            if (result.success && !result.alreadyCompleted) {
+              completedMissions.push('10분 달리기 완주');
+              totalExpGained += 50;
+              finalResult = result; // 마지막 결과 저장 (레벨업 정보)
+            }
+          }
+        }
+      } catch (missionError) {
+        console.error('미션 완료 처리 중 오류:', missionError);
+        // 미션 실패해도 기록 저장은 완료되었으므로 계속 진행
+      }
+
+      setShowCompletionModal(false);
+
+      // 미션 완료 여부에 따라 다른 메시지 표시
+      if (completedMissions.length > 0 && finalResult) {
+        const missionList = completedMissions.map(m => `• ${m}`).join('\n');
+        Alert.alert(
+          finalResult.leveledUp ? '🎉 레벨업!' : '✅ 미션 완료!',
+          `러닝 기록이 저장되었습니다!\n\n완료한 미션:\n${missionList}\n\n획득 경험치: +${totalExpGained} EXP\n현재 레벨: ${finalResult.newLevel}\n경험치: ${finalResult.currentExp}/${finalResult.maxExp}`,
+          [
+            {
+              text: '확인',
+              onPress: () => {
+                // 초기화
+                setTime(0);
+                setDistance(0);
+                setPace(0);
+                setCalories(0);
+                setPathCoords([]);
+                setRunningState('ready');
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          '저장 완료',
+          '러닝 기록이 저장되었습니다!',
+          [
+            {
+              text: '확인',
+              onPress: () => {
+                // 초기화
+                setTime(0);
+                setDistance(0);
+                setPace(0);
+                setCalories(0);
+                setPathCoords([]);
+                setRunningState('ready');
+              }
+            }
+          ]
+        );
+      }
     } catch (error) {
       console.error('저장 실패:', error);
       Alert.alert('오류', '기록 저장에 실패했습니다.');

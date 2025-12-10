@@ -831,7 +831,7 @@ export default function MainScreen() {
                 />
                 <Text style={styles.profileName}>
                   {isLoggedIn
-                    ? selectedCharacter?.name ?? defaultCharacter.name
+                    ? userName
                     : "로그인이 필요합니다"}
                 </Text>
               </TouchableOpacity>
