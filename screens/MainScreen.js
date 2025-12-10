@@ -842,7 +842,7 @@ export default function MainScreen() {
                 />
                 <Text style={styles.profileName}>
                   {isLoggedIn
-                    ? userName || "사용자"
+                    ? userName
                     : "로그인이 필요합니다"}
                 </Text>
               </TouchableOpacity>
