@@ -346,11 +346,11 @@ export default function RunningScreen() {
             }
           }
 
-          // 10분 달리기 미션 체크
-          if (time >= 600) {
-            const result = await completeMission(userId, '10분 달리기 완주', 50, 'mission_2');
+          // 1분 달리기 미션 체크
+          if (time >= 60) {
+            const result = await completeMission(userId, '1분 달리기 완주', 50, 'mission_2');
             if (result.success && !result.alreadyCompleted) {
-              completedMissions.push('10분 달리기 완주');
+              completedMissions.push('1분 달리기 완주');
               totalExpGained += 50;
               finalResult = result; // 마지막 결과 저장 (레벨업 정보)
             }
