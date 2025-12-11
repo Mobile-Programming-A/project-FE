@@ -1,4 +1,3 @@
-// screens/FriendsScreen.js
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
@@ -85,7 +84,7 @@ async function calculateOSRMRoute(start, waypoints, end) {
       }));
     }
   } catch (e) {
-    console.log("❌ OSRM Error:", e);
+    console.log("OSRM Error:", e);
   }
 
   return allPoints;
@@ -196,7 +195,7 @@ export default function FriendsScreen() {
           setRegion(DEFAULT_REGION);
         }
       } catch (err) {
-        console.log("❌ 위치 실패:", err);
+        console.log("위치 실패:", err);
         setRegion(DEFAULT_REGION);
       }
     };
@@ -291,7 +290,7 @@ export default function FriendsScreen() {
         isFavorite: newValue,
       });
     } catch (e) {
-      console.log("❌ 즐겨찾기 업데이트 실패:", e);
+      console.log("즐겨찾기 업데이트 실패:", e);
 
 
       setFriends((prev) =>
@@ -681,7 +680,7 @@ export default function FriendsScreen() {
 
                     <Text style={{ color: "#666", marginTop: 5 }}>
                       {selectedFriend.status ||
-                        "아직 활동 데이터가 없어요"}
+                        "아직 활동 데이터가 없어요!"}
                     </Text>
                   </View>
                 </View>

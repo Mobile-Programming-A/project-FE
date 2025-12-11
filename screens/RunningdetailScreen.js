@@ -138,9 +138,7 @@ export default function RunningDetailScreen({ route }) {
                         <Ionicons name="chevron-back" size={24} color="#333" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>러닝 기록</Text>
-                    <TouchableOpacity style={styles.menuButton}>
-                        <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
-                    </TouchableOpacity>
+                    <View style={styles.menuButton} />
                 </View>
 
                 <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -166,8 +164,11 @@ export default function RunningDetailScreen({ route }) {
                                 <Polyline
                                     coordinates={record.pathCoords}
                                     strokeColor="#71D9A1"
-                                    strokeWidth={4}
+                                    strokeColors={["#71D9A1"]}
+                                    strokeWidth={6}
+                                    geodesic={false}
                                 />
+
 
                                 {/* 시작점 마커 */}
                                 <Marker
