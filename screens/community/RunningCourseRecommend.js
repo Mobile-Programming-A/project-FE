@@ -264,9 +264,7 @@ export default function RunningCourseRecommend({ navigation }) {
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>나의 러닝코스</Text>
-          <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
-          </TouchableOpacity>
+          <View style={styles.moreButton} />
         </View>
 
         {/* 검색바 */}
