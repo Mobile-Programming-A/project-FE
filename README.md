@@ -8,12 +8,38 @@
 <br/>
 
 ## 📋 목차
-- [프로젝트 소개](#-프로젝트-소개)
-- [팀 구성](#-팀-구성)
-- [주요 기능](#-주요-기능)
-- [기술 스택](#-기술-스택)
-- [설치 및 실행](#-설치-및-실행)
-- [프로젝트 구조](#-프로젝트-구조)
+- [설치 및 실행](#설치-및-실행)
+- [프로젝트 소개](#프로젝트-소개)
+- [팀 구성](#팀-구성)
+- [주요 기능](#주요-기능)
+- [기술 스택](#기술-스택)
+- [프로젝트 구조](#프로젝트-구조)
+
+<br/>
+
+## 📦 설치 및 실행
+
+### 필수 요구사항
+- Node.js (v14 이상)
+- npm
+- Expo Go (모바일 앱)
+
+### 설치 방법
+```bash
+# 저장소 클론
+git clone https://github.com/Mobile-Programming-A/project-FE.git
+cd project-FE
+
+# 의존성 설치
+npm install
+
+# 개발 서버 실행
+npx expo start
+
+# 모바일 앱에서 실행
+# 안드로이드: Expo Go 앱에서 QR 스캔
+# iOS: 카메라로 QR 스캔
+```
 
 <br/>
 
@@ -88,32 +114,6 @@
 
 <br/>
 
-## 📦 설치 및 실행
-
-### 필수 요구사항
-- Node.js (v14 이상)
-- npm
-- Expo Go (모바일 앱)
-
-### 설치 방법
-```bash
-# 저장소 클론
-git clone [repository-url]
-cd project-FE
-
-# 의존성 설치
-npm install
-
-# 개발 서버 실행
-npx expo start
-
-# 모바일 앱에서 실행
-# 안드로이드: Expo Go 앱에서 QR 스캔
-# iOS: 카메라로 QR 스캔
-```
-
-<br/>
-
 ## 📁 프로젝트 구조
 ```
 project-FE/
@@ -147,11 +147,6 @@ project-FE/
 │   └── characters.js
 └── types/                    # TypeScript 타입 정의
 ```
-
-<br/>
-
-## 📄 관련 문서
-(프로젝트 종료 후 관련 문서 추가 예정)
 
 <br/>
 
