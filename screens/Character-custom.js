@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Image, Modal, Animated } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Image, Modal, Animated, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -410,133 +410,138 @@ export default function CharacterCustomScreen() {
 
                 {/* 커스터마이징 옵션 */}
                 <View style={styles.customOptions}>
-                    {/* 캐릭터 정보 카드 */}
-                    <View style={styles.characterInfoCard}>
-                        <View style={styles.levelBadge}>
-                            <Text style={styles.levelBadgeText}>LV.{level}</Text>
-                        </View>
-                        <Text style={styles.characterName}>{selectedCharacter ? selectedCharacter.name : defaultCharacter.name}</Text>
-                        <View style={styles.levelBarContainer}>
-                            <Text style={styles.expText}>{currentExp} / {maxExp} EXP</Text>
-                            <View style={styles.levelBarBackground}>
-                                <View style={[styles.levelBarFill, { width: `${expPercentage}%` }]} />
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.scrollContent}
+                    >
+                        {/* 캐릭터 정보 카드 */}
+                        <View style={styles.characterInfoCard}>
+                            <View style={styles.levelBadge}>
+                                <Text style={styles.levelBadgeText}>LV.{level}</Text>
+                            </View>
+                            <Text style={styles.characterName}>{selectedCharacter ? selectedCharacter.name : defaultCharacter.name}</Text>
+                            <View style={styles.levelBarContainer}>
+                                <Text style={styles.expText}>{currentExp} / {maxExp} EXP</Text>
+                                <View style={styles.levelBarBackground}>
+                                    <View style={[styles.levelBarFill, { width: `${expPercentage}%` }]} />
+                                </View>
                             </View>
                         </View>
-                    </View>
 
-                    {/* 다음 레벨까지의 미션 */}
-                    <Text style={styles.sectionTitle}>다음 레벨까지의 미션</Text>
-                    <View style={styles.missionList}>
-                        {/* 2km 미션 */}
-                        <View style={[styles.missionItem, !mission1 && styles.missionItemIncomplete]}>
-                            <Ionicons name="fitness" size={20} color={mission1 ? "#71D9A1" : "#CCCCCC"} />
-                            <View style={styles.missionContent}>
-                                <View style={styles.missionHeader}>
-                                    <Text style={[styles.missionText, !mission1 && styles.missionTextIncomplete]}>2km 달리기 완주</Text>
-                                    {mission1 ? (
-                                        <Ionicons name="checkmark-circle" size={20} color="#71D9A1" />
-                                    ) : (
-                                        <Ionicons name="ellipse-outline" size={20} color="#CCCCCC" />
-                                    )}
-                                </View>
-                                <View style={styles.progressBarContainer}>
-                                    <View style={styles.progressBar}>
-                                        <View 
-                                            style={[
-                                                styles.progressBarFill, 
-                                                { width: `${(mission1Progress.current / mission1Progress.total) * 100}%` }
-                                            ]} 
-                                        />
+                        {/* 다음 레벨까지의 미션 */}
+                        <Text style={styles.sectionTitle}>다음 레벨까지의 미션</Text>
+                        <View style={styles.missionList}>
+                            {/* 2km 미션 */}
+                            <View style={[styles.missionItem, !mission1 && styles.missionItemIncomplete]}>
+                                <Ionicons name="fitness" size={20} color={mission1 ? "#71D9A1" : "#CCCCCC"} />
+                                <View style={styles.missionContent}>
+                                    <View style={styles.missionHeader}>
+                                        <Text style={[styles.missionText, !mission1 && styles.missionTextIncomplete]}>2km 달리기 완주</Text>
+                                        {mission1 ? (
+                                            <Ionicons name="checkmark-circle" size={20} color="#71D9A1" />
+                                        ) : (
+                                            <Ionicons name="ellipse-outline" size={20} color="#CCCCCC" />
+                                        )}
                                     </View>
-                                    <Text style={styles.progressText}>
-                                        {mission1Progress.current.toFixed(2)}km / {mission1Progress.total}km
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* 10분 미션 */}
-                        <View style={[styles.missionItem, !mission2 && styles.missionItemIncomplete]}>
-                            <Ionicons name="time" size={20} color={mission2 ? "#71D9A1" : "#CCCCCC"} />
-                            <View style={styles.missionContent}>
-                                <View style={styles.missionHeader}>
-                                    <Text style={[styles.missionText, !mission2 && styles.missionTextIncomplete]}>10분 달리기 완주</Text>
-                                    {mission2 ? (
-                                        <Ionicons name="checkmark-circle" size={20} color="#71D9A1" />
-                                    ) : (
-                                        <Ionicons name="ellipse-outline" size={20} color="#CCCCCC" />
-                                    )}
-                                </View>
-                                <View style={styles.progressBarContainer}>
-                                    <View style={styles.progressBar}>
-                                        <View 
-                                            style={[
-                                                styles.progressBarFill, 
-                                                { width: `${(mission2Progress.current / mission2Progress.total) * 100}%` }
-                                            ]} 
-                                        />
+                                    <View style={styles.progressBarContainer}>
+                                        <View style={styles.progressBar}>
+                                            <View
+                                                style={[
+                                                    styles.progressBarFill,
+                                                    { width: `${(mission1Progress.current / mission1Progress.total) * 100}%` }
+                                                ]}
+                                            />
+                                        </View>
+                                        <Text style={styles.progressText}>
+                                            {mission1Progress.current.toFixed(2)}km / {mission1Progress.total}km
+                                        </Text>
                                     </View>
-                                    <Text style={styles.progressText}>
-                                        {mission2Progress.current.toFixed(1)}분 / {mission2Progress.total}분
-                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* 10분 미션 */}
+                            <View style={[styles.missionItem, !mission2 && styles.missionItemIncomplete]}>
+                                <Ionicons name="time" size={20} color={mission2 ? "#71D9A1" : "#CCCCCC"} />
+                                <View style={styles.missionContent}>
+                                    <View style={styles.missionHeader}>
+                                        <Text style={[styles.missionText, !mission2 && styles.missionTextIncomplete]}>10분 달리기 완주</Text>
+                                        {mission2 ? (
+                                            <Ionicons name="checkmark-circle" size={20} color="#71D9A1" />
+                                        ) : (
+                                            <Ionicons name="ellipse-outline" size={20} color="#CCCCCC" />
+                                        )}
+                                    </View>
+                                    <View style={styles.progressBarContainer}>
+                                        <View style={styles.progressBar}>
+                                            <View
+                                                style={[
+                                                    styles.progressBarFill,
+                                                    { width: `${(mission2Progress.current / mission2Progress.total) * 100}%` }
+                                                ]}
+                                            />
+                                        </View>
+                                        <Text style={styles.progressText}>
+                                            {mission2Progress.current.toFixed(1)}분 / {mission2Progress.total}분
+                                        </Text>
+                                    </View>
                                 </View>
                             </View>
                         </View>
-                    </View>
 
-                    {/* 획득한 뱃지 */}
-                    <Text style={styles.sectionTitle}>획득한 뱃지</Text>
-                    <View style={styles.badgeContainer}>
-                        <View style={styles.badgeGrid}>
-                            {/* 뱃지 1: leaf (badge_first_step) */}
-                            <TouchableOpacity 
-                                style={styles.badgeWrapper}
-                                onPress={() => handleBadgePress('badge_first_step', badgeFirstStep)}
-                                disabled={!badgeFirstStep}
-                            >
-                                <View style={[styles.badge, { backgroundColor: badgeFirstStep ? '#FFB74D' : '#CCCCCC' }]}>
-                                    <Ionicons name="leaf" size={24} color="#FFF" />
-                                </View>
-                                {!badgeFirstStep && <Text style={styles.lockedText}>미획득</Text>}
-                            </TouchableOpacity>
+                        {/* 획득한 뱃지 */}
+                        <Text style={styles.sectionTitle}>획득한 뱃지</Text>
+                        <View style={styles.badgeContainer}>
+                            <View style={styles.badgeGrid}>
+                                {/* 뱃지 1: leaf (badge_first_step) */}
+                                <TouchableOpacity
+                                    style={styles.badgeWrapper}
+                                    onPress={() => handleBadgePress('badge_first_step', badgeFirstStep)}
+                                    disabled={!badgeFirstStep}
+                                >
+                                    <View style={[styles.badge, { backgroundColor: badgeFirstStep ? '#FFB74D' : '#CCCCCC' }]}>
+                                        <Ionicons name="leaf" size={24} color="#FFF" />
+                                    </View>
+                                    {!badgeFirstStep && <Text style={styles.lockedText}>미획득</Text>}
+                                </TouchableOpacity>
 
-                            {/* 뱃지 2: trophy (badge_2) */}
-                            <TouchableOpacity 
-                                style={styles.badgeWrapper}
-                                onPress={() => handleBadgePress('badge_2', badge2)}
-                                disabled={!badge2}
-                            >
-                                <View style={[styles.badge, { backgroundColor: badge2 ? '#71D9A1' : '#CCCCCC' }]}>
-                                    <Ionicons name="trophy" size={24} color="#FFF" />
-                                </View>
-                                {!badge2 && <Text style={styles.lockedText}>미획득</Text>}
-                            </TouchableOpacity>
+                                {/* 뱃지 2: trophy (badge_2) */}
+                                <TouchableOpacity
+                                    style={styles.badgeWrapper}
+                                    onPress={() => handleBadgePress('badge_2', badge2)}
+                                    disabled={!badge2}
+                                >
+                                    <View style={[styles.badge, { backgroundColor: badge2 ? '#71D9A1' : '#CCCCCC' }]}>
+                                        <Ionicons name="trophy" size={24} color="#FFF" />
+                                    </View>
+                                    {!badge2 && <Text style={styles.lockedText}>미획득</Text>}
+                                </TouchableOpacity>
 
-                            {/* 뱃지 3: checkmark (badge_3) */}
-                            <TouchableOpacity 
-                                style={styles.badgeWrapper}
-                                onPress={() => handleBadgePress('badge_3', badge3)}
-                                disabled={!badge3}
-                            >
-                                <View style={[styles.badge, { backgroundColor: badge3 ? '#64B5F6' : '#CCCCCC' }]}>
-                                    <Ionicons name="checkmark" size={24} color="#FFF" />
-                                </View>
-                                {!badge3 && <Text style={styles.lockedText}>미획득</Text>}
-                            </TouchableOpacity>
+                                {/* 뱃지 3: checkmark (badge_3) */}
+                                <TouchableOpacity
+                                    style={styles.badgeWrapper}
+                                    onPress={() => handleBadgePress('badge_3', badge3)}
+                                    disabled={!badge3}
+                                >
+                                    <View style={[styles.badge, { backgroundColor: badge3 ? '#64B5F6' : '#CCCCCC' }]}>
+                                        <Ionicons name="checkmark" size={24} color="#FFF" />
+                                    </View>
+                                    {!badge3 && <Text style={styles.lockedText}>미획득</Text>}
+                                </TouchableOpacity>
 
-                            {/* 뱃지 4: heart (badge_4) */}
-                            <TouchableOpacity 
-                                style={styles.badgeWrapper}
-                                onPress={() => handleBadgePress('badge_4', badge4)}
-                                disabled={!badge4}
-                            >
-                                <View style={[styles.badge, { backgroundColor: badge4 ? '#E57373' : '#CCCCCC' }]}>
-                                    <Ionicons name="heart" size={24} color="#FFF" />
-                                </View>
-                                {!badge4 && <Text style={styles.lockedText}>미획득</Text>}
-                            </TouchableOpacity>
+                                {/* 뱃지 4: heart (badge_4) */}
+                                <TouchableOpacity
+                                    style={styles.badgeWrapper}
+                                    onPress={() => handleBadgePress('badge_4', badge4)}
+                                    disabled={!badge4}
+                                >
+                                    <View style={[styles.badge, { backgroundColor: badge4 ? '#E57373' : '#CCCCCC' }]}>
+                                        <Ionicons name="heart" size={24} color="#FFF" />
+                                    </View>
+                                    {!badge4 && <Text style={styles.lockedText}>미획득</Text>}
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                    </View>
+                    </ScrollView>
                 </View>
 
                 {/* 뱃지 획득 모달 */}
@@ -694,6 +699,9 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         padding: 20
+    },
+    scrollContent: {
+        paddingBottom: 30
     },
     characterInfoCard: {
         backgroundColor: '#FFF9C4',
