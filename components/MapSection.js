@@ -113,12 +113,13 @@ const simplifyRoute = (coords, tolerance = 8) => {
 };
 // 날짜 포맷
 const formatDate = (d) => {
-  const date = new Date(d);
-  if (isNaN(date.getTime())) return "";
+  if (!d) return "";
+
+  const date = d.toDate ? d.toDate() : new Date(d);
+  if (isNaN(date)) return "";
+
   const week = ["일", "월", "화", "수", "목", "금", "토"];
-  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${
-    week[date.getDay()]
-  }요일`;
+  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${week[date.getDay()]}요일`;
 };
 
 // region 계산
@@ -393,7 +394,7 @@ export default function MapSection({
         </MapView>
       </View>
 
-      <Text style={styles.mapDate}>{formatDate(lastRunDate || new Date())}</Text>
+      <Text style={styles.mapDate}>{formatDate(new Date())}</Text>
 
       {/* 오른쪽 친구 버튼 */}
       <TouchableOpacity style={styles.avatarList} onPress={onPressFriends}>

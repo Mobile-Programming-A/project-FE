@@ -426,7 +426,7 @@ export default function RunningScreen() {
               initialRegion={region}
               showsUserLocation={true}
               showsMyLocationButton={false}
-              followsUserLocation={runningState === 'running'}
+              followsUserLocation={false} 
               showsCompass={false}
               showsScale={false}
               toolbarEnabled={false}
@@ -443,13 +443,16 @@ export default function RunningScreen() {
                   />
                   
                   {/* 러닝 경로 - 메인 레이어 */}
-                  <Polyline
-                    coordinates={pathCoords}
-                    strokeColor="#71D9A1"
-                    strokeWidth={6}
-                    lineCap="round"
-                    lineJoin="round"
-                  />
+                 <Polyline
+                coordinates={pathCoords}
+                strokeColor="#71D9A1"
+                strokeWidth={6}
+                geodesic={true}
+                lineCap="round"
+                lineJoin="round"
+                tappable={false}
+              />
+
                 </>
               )}
 
@@ -951,7 +954,6 @@ const styles = StyleSheet.create({
   confirmButton: {
     flex: 1,
     height: 50,
-    backgroundColor: '#6B7FFF',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
