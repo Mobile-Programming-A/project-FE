@@ -1,4 +1,3 @@
-// screens/MainScreen.js
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
@@ -7,17 +6,19 @@ import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
-    collection,
-    getDocs,
-    onSnapshot,
-    orderBy,
-    query,
-    where,
+  collection,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
 } from "firebase/firestore";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   Dimensions,
+  Easing,
   Image,
   SafeAreaView,
   ScrollView,
@@ -26,18 +27,16 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Animated,
-  Easing,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import MapSection from "../components/MapSection";
 import TabScreenLayout from "../components/TabScreenLayout";
 import {
-    characters,
-    defaultCharacter,
-    getCharacterById,
-    getProfileImageById,
-    profileImages,
+  characters,
+  defaultCharacter,
+  getCharacterById,
+  getProfileImageById,
+  profileImages,
 } from "../data/characters";
 import { auth, db } from "../services/config";
 import { getRunningRecords } from "../services/runningRecordsService";
@@ -116,7 +115,7 @@ export default function MainScreen() {
   const [isBasicWinking, setIsBasicWinking] = useState(false);
   const [isCapWinking, setIsCapWinking] = useState(false);
 
-  // 애니메이션 관련 ref
+  
   const bounceAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -124,7 +123,6 @@ export default function MainScreen() {
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const flipAnim = useRef(new Animated.Value(1)).current;
 
-  // ✔ 메시지는 앱 처음 로드될 때만 설정
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * encouragingMessages.length);
     setEncouragingMessage(encouragingMessages[randomIndex]);
@@ -145,7 +143,7 @@ export default function MainScreen() {
     return () => unsubscribe();
   }, []);
 
-  // 🎭 캐릭터 애니메이션 (4가지 스타일)
+  // 캐릭터 애니메이션 (4가지 스타일)
   useEffect(() => {
     // 애니메이션 초기화
     bounceAnim.setValue(0);
@@ -350,7 +348,7 @@ export default function MainScreen() {
     };
   }, [currentAnimationStyle, bounceAnim, scaleAnim, rotateAnim]);
 
-  // 👁️ 겨울 러너 캐릭터 윙크 효과 (랜덤)
+  // 겨울 러너 캐릭터 윙크 효과 (랜덤)
   useEffect(() => {
     // 겨울 러너 캐릭터(id: 4)일 때만 윙크
     if (selectedCharacter?.id !== 4) return;
@@ -376,7 +374,7 @@ export default function MainScreen() {
     return () => clearTimeout(timer);
   }, [selectedCharacter]);
 
-  // 😲 썬글라스 망키 놀란 표정 효과 (랜덤)
+  // 썬글라스 망키 놀란 표정 효과 (랜덤)
   useEffect(() => {
     // 썬글라스 망키(id: 2)일 때만 놀란 표정
     if (selectedCharacter?.id !== 2) return;
@@ -402,7 +400,7 @@ export default function MainScreen() {
     return () => clearTimeout(timer);
   }, [selectedCharacter]);
 
-  // 😉 기본 망키 윙크 효과 (랜덤)
+  // 기본 망키 윙크 효과 (랜덤)
   useEffect(() => {
     // 기본 망키(id: 1)일 때만 윙크
     if (selectedCharacter?.id !== 1) return;
@@ -428,7 +426,7 @@ export default function MainScreen() {
     return () => clearTimeout(timer);
   }, [selectedCharacter]);
 
-  // 😉 모자 망키 윙크 효과 (랜덤)
+  // 모자 망키 윙크 효과 (랜덤)
   useEffect(() => {
     // 모자 망키(id: 3)일 때만 윙크
     if (selectedCharacter?.id !== 3) return;
@@ -476,7 +474,7 @@ export default function MainScreen() {
   );
 
   // ----------------------------------
-  // 🔥 친구 목록 실시간 동기화 (리팩토링)
+  //  친구 목록 실시간 동기화
   // ----------------------------------
   useFocusEffect(
     useCallback(() => {
@@ -489,14 +487,14 @@ export default function MainScreen() {
           const data = querySnapshot.docs.map((docItem) => {
             const f = docItem.data() || {};
 
-            // ✔ stats 완전 통합 정제
+            // stats 완전 통합 정제
             const stats = {
               step: Number(f?.stats?.step ?? f["stats.step"] ?? 0),
               cal: Number(f?.stats?.cal ?? f["stats.cal"] ?? 0),
               dist: Number(f?.stats?.dist ?? f["stats.dist"] ?? 0),
             };
 
-            // ✔ route 정제해서 전달
+            // route 정제해서 전달
             const cleanedRoute = Array.isArray(f.route)
               ? f.route.filter(
                 (p) =>
@@ -526,7 +524,7 @@ export default function MainScreen() {
           setFriends(data);
         },
         (error) => {
-          console.error("❌ 친구 목록 불러오기 실패:", error);
+          console.error("친구 목록 불러오기 실패:", error);
           setFriends([]);
         }
       );
@@ -536,7 +534,7 @@ export default function MainScreen() {
   );
 
   // ----------------------------------
-  // 🔥 위치 불러오기 (중복 permission 요청 방지)
+  // 위치 불러오기 (중복 permission 요청 방지)
   // ----------------------------------
   const loadMyLocation = async () => {
     try {
@@ -726,7 +724,7 @@ export default function MainScreen() {
     router.replace("/");
   };
 
-  // 🎯 캐릭터 클릭 상호작용
+  //  캐릭터 클릭 상호작용
   const handleCharacterPress = () => {
     // 랜덤 응원 메시지 변경
     const randomIndex = Math.floor(Math.random() * encouragingMessages.length);
