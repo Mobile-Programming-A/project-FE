@@ -418,9 +418,7 @@ export default function HistoryScreen() {
                     <Ionicons name="chevron-back" size={24} color="#333" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>러닝 기록</Text>
-                <TouchableOpacity style={styles.menuButton}>
-                    <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
-                </TouchableOpacity>
+                <View style={styles.menuButton} />
             </View>
 
             <ScrollView
