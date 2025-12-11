@@ -164,8 +164,11 @@ export default function RunningDetailScreen({ route }) {
                                 <Polyline
                                     coordinates={record.pathCoords}
                                     strokeColor="#71D9A1"
-                                    strokeWidth={4}
+                                    strokeColors={["#71D9A1"]}
+                                    strokeWidth={6}
+                                    geodesic={false}
                                 />
+
 
                                 {/* 시작점 마커 */}
                                 <Marker

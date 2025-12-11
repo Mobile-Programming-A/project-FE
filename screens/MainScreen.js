@@ -661,7 +661,10 @@ export default function MainScreen() {
         (a, b) => new Date(b.date) - new Date(a.date)
       )[0];
 
-      setLastRunDate(lastRecord.date);
+      setLastRunDate(
+  lastRecord.date?.toDate ? lastRecord.date.toDate() : new Date(lastRecord.date)
+);
+
 
       setLastRunPath(lastRecord.pathCoords?.length > 0 ? lastRecord.pathCoords : null);
     } catch (error) {
