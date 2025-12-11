@@ -1,4 +1,3 @@
-// components/MapSection.js
 import React, {
   useCallback,
   useEffect,
@@ -61,7 +60,6 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
-// Douglas–Peucker 단순화
 const getPerpendicularDistance = (p, start, end) => {
   const x0 = p.longitude;
   const y0 = p.latitude;
@@ -145,12 +143,11 @@ const getRegionFromCoords = (coords = []) => {
     maxLng = Math.max(maxLng, c.longitude);
   });
 
-  // 마커 간 거리
+  
   const latDiff = maxLat - minLat;
   const lngDiff = maxLng - minLng;
 
-  // 🔥 여기서 "적당한 확대" 보정
-  const basePadding = 0.01; // 기본 여유
+  const basePadding = 0.01; 
   const dynamicPadding = Math.max(latDiff, lngDiff) * 0.6;
 
   const latitudeDelta = Math.max(latDiff + basePadding + dynamicPadding, 0.02);
@@ -190,7 +187,7 @@ async function calculateOSRMRoute(start, waypoints, end) {
   return all;
 }
 
-// 부드러운 애니메이션
+
 const animateRegion = (mapRef, region, duration = 650) => {
   if (!mapRef?.current) return;
 
@@ -225,7 +222,7 @@ export default function MapSection({
 
   const safeFriends = Array.isArray(friends) ? friends : [];
 
-  // 친구 좌표만 (전체 보기 용)
+  
   const allFriendCoords = safeFriends
     .filter((f) => f.lat != null && f.lng != null)
     .map((f) => ({
@@ -233,7 +230,7 @@ export default function MapSection({
       longitude: typeof f.lng === "string" ? parseFloat(f.lng) : f.lng,
     }));
 
-  // displayRoute → 우선 표시 / 아니면 전체
+
   const allCoords = useMemo(() => {
     if (displayRoute.length > 0) return displayRoute;
 
@@ -242,7 +239,7 @@ export default function MapSection({
     return c;
   }, [displayRoute, allFriendCoords, myLocation]);
 
-  // 전체 화면용(친구만)
+  
   const fullRegion = useMemo(
     () => getRegionFromCoords(allFriendCoords),
     [allFriendCoords]
@@ -272,7 +269,6 @@ export default function MapSection({
     async (friend) => {
       if (!friend || !initialFitDone) return;
 
-      // 다시 클릭 → 친구 전체 보기 (내 위치 포함 X)
       if (selectedFriend?.id === friend.id) {
         onSelectFriend?.(null);
         setDisplayRoute([]);
@@ -280,7 +276,6 @@ export default function MapSection({
         return;
       }
 
-      // 새 친구 선택
       onSelectFriend?.(friend);
       setDisplayRoute([]);
 
@@ -295,7 +290,6 @@ export default function MapSection({
         650
       );
 
-      // 캐시 확인
       if (routeCache[friend.id]) {
         setDisplayRoute(routeCache[friend.id]);
         return;
@@ -427,9 +421,6 @@ export default function MapSection({
   );
 }
 
-/* --------------------------------------------------
- * 스타일
- * -------------------------------------------------- */
 
 const styles = StyleSheet.create({
   mapContainer: { flex: 1, position: "relative" },
