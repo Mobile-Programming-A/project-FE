@@ -34,7 +34,7 @@ export default function CharacterCustomScreen() {
 
     // 미션 진척도 상태
     const [mission1Progress, setMission1Progress] = useState({ current: 0, total: 2 }); // 2km
-    const [mission2Progress, setMission2Progress] = useState({ current: 0, total: 10 }); // 10분
+    const [mission2Progress, setMission2Progress] = useState({ current: 0, total: 1 }); // 1분
 
     // 뱃지 획득 모달 상태
     const [showBadgeModal, setShowBadgeModal] = useState(false);
@@ -186,23 +186,24 @@ export default function CharacterCustomScreen() {
                 }
             });
 
-            // 2km 미션 진척도 (최대 2km까지만 표시)
-            const distance2kmProgress = Math.min(maxDistance, 2);
+            // 2km 미션 진척도 (2km 넘으면 루프)
+            const distance2kmProgress = maxDistance % 2; // 2km마다 0으로 리셋
             setMission1Progress({ current: distance2kmProgress, total: 2 });
             
-            // 10분(600초) 미션 진척도 (최대 600초까지만 표시)
-            const time10minProgress = Math.min(maxTime / 60, 10); // 분 단위로 변환
-            setMission2Progress({ current: time10minProgress, total: 10 });
+            // 1분(60초) 미션 진척도 (1분 넘으면 루프)
+            const time1minProgress = (maxTime / 60) % 1; // 1분마다 0으로 리셋
+            setMission2Progress({ current: time1minProgress, total: 1 });
 
-            // 미션 완료 여부 업데이트
+            // 미션 완료 여부는 Firebase의 미션 상태로 판단 (반복 가능)
+            // UI 표시용으로만 사용, 실제 완료는 저장 시 체크
             setMission1(maxDistance >= 2.0);
-            setMission2(maxTime >= 600);
+            setMission2(maxTime >= 60);
             
         } catch (error) {
             console.error('미션 진척도 확인 실패:', error);
             // 에러 발생 시 기본값 설정
             setMission1Progress({ current: 0, total: 2 });
-            setMission2Progress({ current: 0, total: 10 });
+            setMission2Progress({ current: 0, total: 1 });
             setMission1(false);
             setMission2(false);
         }
@@ -428,11 +429,11 @@ export default function CharacterCustomScreen() {
                     <Text style={styles.sectionTitle}>다음 레벨까지의 미션</Text>
                     <View style={styles.missionList}>
                         {/* 2km 미션 */}
-                        <View style={[styles.missionItem, !mission1 && styles.missionItemIncomplete]}>
-                            <Ionicons name="fitness" size={20} color={mission1 ? "#71D9A1" : "#CCCCCC"} />
+                        <View style={styles.missionItem}>
+                            <Ionicons name="fitness" size={20} color="#71D9A1" />
                             <View style={styles.missionContent}>
                                 <View style={styles.missionHeader}>
-                                    <Text style={[styles.missionText, !mission1 && styles.missionTextIncomplete]}>2km 달리기 완주</Text>
+                                    <Text style={styles.missionText}>2km 달리기 완주</Text>
                                     {mission1 ? (
                                         <Ionicons name="checkmark-circle" size={20} color="#71D9A1" />
                                     ) : (
@@ -455,12 +456,12 @@ export default function CharacterCustomScreen() {
                             </View>
                         </View>
 
-                        {/* 10분 미션 */}
-                        <View style={[styles.missionItem, !mission2 && styles.missionItemIncomplete]}>
-                            <Ionicons name="time" size={20} color={mission2 ? "#71D9A1" : "#CCCCCC"} />
+                        {/* 1분 미션 */}
+                        <View style={styles.missionItem}>
+                            <Ionicons name="time" size={20} color="#71D9A1" />
                             <View style={styles.missionContent}>
                                 <View style={styles.missionHeader}>
-                                    <Text style={[styles.missionText, !mission2 && styles.missionTextIncomplete]}>10분 달리기 완주</Text>
+                                    <Text style={styles.missionText}>1분 달리기 완주</Text>
                                     {mission2 ? (
                                         <Ionicons name="checkmark-circle" size={20} color="#71D9A1" />
                                     ) : (
@@ -777,27 +778,29 @@ const styles = StyleSheet.create({
     },
     missionText: {
         fontSize: 15,
-        color: '#333',
+        color: '#000000',
         fontWeight: '500'
     },
     missionTextIncomplete: {
-        color: '#999',
+        color: '#000000',
         textDecorationLine: 'none'
     },
     progressBarContainer: {
         width: '100%'
     },
     progressBar: {
-        height: 6,
-        backgroundColor: '#E0E0E0',
-        borderRadius: 3,
+        height: 10,
+        backgroundColor: '#E8F5E9',
+        borderRadius: 5,
         overflow: 'hidden',
-        marginBottom: 4
+        marginBottom: 4,
+        borderWidth: 1,
+        borderColor: '#C8E6C9'
     },
     progressBarFill: {
         height: '100%',
-        backgroundColor: '#71D9A1',
-        borderRadius: 3
+        backgroundColor: '#4CAF50',
+        borderRadius: 5
     },
     progressText: {
         fontSize: 11,
