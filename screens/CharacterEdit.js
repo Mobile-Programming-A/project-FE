@@ -44,7 +44,7 @@ export default function CharacterEditScreen() {
     const checkUnlockedCharacters = async () => {
         try {
             const userEmail = await AsyncStorage.getItem('userEmail') || 'hong@example.com';
-            console.log('📧 로그인 이메일:', userEmail);
+            console.log('로그인 이메일:', userEmail);
             
             const usersRef = collection(db, 'users');
             const q = query(usersRef, where('email', '==', userEmail));
@@ -53,7 +53,7 @@ export default function CharacterEditScreen() {
             if (!querySnapshot.empty) {
                 const userData = querySnapshot.docs[0].data();
                 const level = userData.level || 1;
-                console.log('✅ 사용자 레벨 불러오기 성공:', level);
+                console.log('사용자 레벨 불러오기 성공:', level);
                 setUserLevel(level);
 
                 // 이전에 확인한 레벨 가져오기
@@ -68,8 +68,8 @@ export default function CharacterEditScreen() {
                     );
 
                     if (newlyUnlocked.length > 0) {
-                        console.log('🎉 새로 해금된 캐릭터:', newlyUnlocked.map(c => `${c.name} (Lv.${c.level})`));
-                        console.log('📊 총 해금 캐릭터 수:', newlyUnlocked.length);
+                        console.log('새로 해금된 캐릭터:', newlyUnlocked.map(c => `${c.name} (Lv.${c.level})`));
+                        console.log('총 해금 캐릭터 수:', newlyUnlocked.length);
                         setUnlockedCharacters(newlyUnlocked);
                         setCurrentUnlockIndex(0);
                         setTimeout(() => {
@@ -81,17 +81,17 @@ export default function CharacterEditScreen() {
                     await AsyncStorage.setItem('lastCheckedLevel', level.toString());
                 } else if (level < previousLevel) {
                     // 레벨이 내려간 경우 현재 레벨로 업데이트 (해금 표시 안함)
-                    console.log('📉 레벨이 내려갔습니다:', previousLevel, '→', level);
+                    console.log('레벨이 내려갔습니다:', previousLevel, '→', level);
                     await AsyncStorage.setItem('lastCheckedLevel', level.toString());
                 } else {
-                    console.log('ℹ️ 레벨 변화 없음:', level);
+                    console.log('ℹ레벨 변화 없음:', level);
                 }
             } else {
-                console.log('❌ 사용자를 찾을 수 없습니다. 기본 레벨 1로 설정');
+                console.log('사용자를 찾을 수 없습니다. 기본 레벨 1로 설정');
                 setUserLevel(1);
             }
         } catch (error) {
-            console.error('❌ 레벨 불러오기 실패:', error);
+            console.error('레벨 불러오기 실패:', error);
             setUserLevel(1);
         }
     };
@@ -190,26 +190,26 @@ export default function CharacterEditScreen() {
     // currentUnlockIndex 변경 시 애니메이션 재시작
     useEffect(() => {
         if (showUnlockModal && unlockedCharacters.length > 0) {
-            console.log(`🎬 애니메이션 시작: ${currentUnlockIndex + 1} / ${unlockedCharacters.length} - ${unlockedCharacters[currentUnlockIndex]?.name}`);
+            console.log(`애니메이션 시작: ${currentUnlockIndex + 1} / ${unlockedCharacters.length} - ${unlockedCharacters[currentUnlockIndex]?.name}`);
             startUnlockAnimation();
             
             // 3초 후 다음 캐릭터
             const timer = setTimeout(() => {
-                console.log(`⏰ 타이머 실행: 현재 ${currentUnlockIndex}, 전체 ${unlockedCharacters.length}`);
+                console.log(`타이머 실행: 현재 ${currentUnlockIndex}, 전체 ${unlockedCharacters.length}`);
                 if (currentUnlockIndex < unlockedCharacters.length - 1) {
-                    console.log('➡️ 다음 캐릭터로 이동');
+                    console.log('다음 캐릭터로 이동');
                     setCurrentUnlockIndex(prev => {
-                        console.log(`📍 인덱스 변경: ${prev} → ${prev + 1}`);
+                        console.log(`인덱스 변경: ${prev} → ${prev + 1}`);
                         return prev + 1;
                     });
                 } else {
-                    console.log('✅ 마지막 캐릭터, 모달 닫기');
+                    console.log('마지막 캐릭터, 모달 닫기');
                     closeUnlockModal();
                 }
             }, 3000);
 
             return () => {
-                console.log('🧹 타이머 정리');
+                console.log('타이머 정리');
                 clearTimeout(timer);
             };
         }
@@ -218,7 +218,7 @@ export default function CharacterEditScreen() {
     // 캐릭터 잠금 여부 확인
     const isCharacterLocked = (character) => {
         const locked = userLevel < character.level;
-        console.log(`🔍 캐릭터 잠금 체크: ${character.name} (필요: Lv.${character.level}, 현재: Lv.${userLevel}) => ${locked ? '🔒 잠김' : '✅ 해제'}`);
+        console.log(`캐릭터 잠금 체크: ${character.name} (필요: Lv.${character.level}, 현재: Lv.${userLevel}) => ${locked ? '🔒 잠김' : '✅ 해제'}`);
         return locked;
     };
 

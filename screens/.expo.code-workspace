@@ -1,0 +1,46 @@
+{
+	"folders": [
+		{
+			"path": "../.expo"
+		},
+		{
+			"path": "../.git"
+		},
+		{
+			"path": "../.vscode"
+		},
+		{
+			"path": "../app"
+		},
+		{
+			"path": "../assets"
+		},
+		{
+			"path": "../components"
+		},
+		{
+			"path": "../constants"
+		},
+		{
+			"path": "../data"
+		},
+		{
+			"path": "../hooks"
+		},
+		{
+			"path": "../node_modules"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../scripts"
+		},
+		{
+			"path": "../services"
+		},
+		{
+			"path": "../types"
+		}
+	]
+}
