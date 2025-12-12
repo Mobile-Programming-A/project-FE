@@ -595,7 +595,6 @@ export default function MainScreen() {
                 setSelectedProfileImage(profileImages[0]);
             }
 
-
             // Firebase users 컬렉션에서도 확인하여 동기화
             const userEmail = await AsyncStorage.getItem('userEmail') || 'hong@example.com';
             const usersRef = collection(db, 'users');

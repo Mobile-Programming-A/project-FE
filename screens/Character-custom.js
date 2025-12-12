@@ -333,7 +333,7 @@ export default function CharacterCustomScreen() {
         const friendsSnapshot = await getDocs(friendsRef);
         const friendsCount = friendsSnapshot.size;
 
-        console.log("👥 현재 친구 수:", friendsCount);
+        console.log("현재 친구 수:", friendsCount);
 
         // 친구가 3명 이상이고 badge_4가 false이거나 없으면 true로 업데이트
         if (friendsCount >= 3 && !userData.badge_4) {
