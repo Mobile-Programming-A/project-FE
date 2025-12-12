@@ -154,7 +154,6 @@ export default function MainScreen() {
                 setSelectedProfileImage(profileImages[0]);
             }
 
-
             // Firebase users 컬렉션에서도 확인하여 동기화
             const userEmail = await AsyncStorage.getItem('userEmail') || 'hong@example.com';
             const usersRef = collection(db, 'users');
@@ -163,7 +162,6 @@ export default function MainScreen() {
 
             if (!querySnapshot.empty) {
                 const userData = querySnapshot.docs[0].data();
-
 
                 // Firebase의 avatar 정보로 업데이트
                 if (userData.avatar) {
@@ -258,7 +256,7 @@ export default function MainScreen() {
                                 style={styles.profileImage}
                             />
                             <Text style={styles.profileName}>
-                                {userName}
+                                {selectedCharacter ? selectedCharacter.name : defaultCharacter.name}
                             </Text>
                         </TouchableOpacity>
                         <View style={styles.chatBubble} />
@@ -266,15 +264,6 @@ export default function MainScreen() {
 
                     {/* 3D Character Area */}
                     <View style={styles.characterContainer}>
-                        {/* 말풍선 */}
-                        <View style={styles.speechBubbleContainer}>
-                            <View style={styles.speechBubble}>
-                                <Text style={styles.speechBubbleText}>
-                                    {encouragingMessage || '오늘도 달려볼까요? 💪'}
-                                </Text>
-                            </View>
-                            <View style={styles.speechBubbleTail} />
-                        </View>
                         {/* 말풍선 */}
                         <View style={styles.speechBubbleContainer}>
                             <View style={styles.speechBubble}>
@@ -364,45 +353,9 @@ const styles = StyleSheet.create({
         color: '#333',
     },
 
-
     characterContainer: {
         alignItems: 'center',
         paddingVertical: 20,
-        position: 'relative',
-    },
-    speechBubbleContainer: {
-        position: 'relative',
-        marginBottom: 15,
-        alignItems: 'center',
-    },
-    speechBubble: {
-        backgroundColor: '#FFF',
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        maxWidth: width * 0.7,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    speechBubbleText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#333',
-        textAlign: 'center',
-    },
-    speechBubbleTail: {
-        width: 0,
-        height: 0,
-        borderLeftWidth: 10,
-        borderRightWidth: 10,
-        borderTopWidth: 10,
-        borderLeftColor: 'transparent',
-        borderRightColor: 'transparent',
-        borderTopColor: '#FFF',
-        marginTop: -1,
         position: 'relative',
     },
     speechBubbleContainer: {
