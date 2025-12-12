@@ -1,5 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from 'expo-router';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import {
     Dimensions,
     SafeAreaView,
@@ -12,12 +16,37 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import TabScreenLayout from '../components/TabScreenLayout';
+import { db } from '../services/config';
 
 const { width, height } = Dimensions.get('window');
 
 export default function RunningDetailScreen({ route }) {
     const router = useRouter();
     const { record } = route.params;
+    const [userName, setUserName] = useState('사용자');
+
+    // 사용자 이름 불러오기
+    useEffect(() => {
+        loadUserName();
+    }, []);
+
+    const loadUserName = async () => {
+        try {
+            const userEmail = await AsyncStorage.getItem('userEmail') || 'hong@example.com';
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('email', '==', userEmail));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                if (userData.name) {
+                    setUserName(userData.name);
+                }
+            }
+        } catch (error) {
+            console.error('사용자 이름 불러오기 실패:', error);
+        }
+    };
 
     // 시간 포맷
     const formatTime = (seconds) => {
@@ -93,8 +122,12 @@ export default function RunningDetailScreen({ route }) {
 
     return (
         <TabScreenLayout>
-            <SafeAreaView style={styles.container}>
-                <StatusBar barStyle="dark-content" />
+            <LinearGradient
+                    colors={['#B8E6F0', '#C8EDD4', '#D4E9D7']}
+                    style={{ flex: 1 }}
+                >
+                    <SafeAreaView style={styles.container}>
+                        <StatusBar barStyle="dark-content" />
 
                 {/* 헤더 */}
                 <View style={styles.header}>
@@ -105,15 +138,13 @@ export default function RunningDetailScreen({ route }) {
                         <Ionicons name="chevron-back" size={24} color="#333" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>러닝 기록</Text>
-                    <TouchableOpacity style={styles.menuButton}>
-                        <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
-                    </TouchableOpacity>
+                    <View style={styles.menuButton} />
                 </View>
 
                 <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                     {/* 기록 ID 및 날짜 */}
                     <View style={styles.titleSection}>
-                        <Text style={styles.recordId}>{record.id}</Text>
+                        <Text style={styles.recordId}>{record.locationName || record.id}</Text>
                         <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
                     </View>
 
@@ -132,9 +163,12 @@ export default function RunningDetailScreen({ route }) {
                                 {/* 러닝 경로 */}
                                 <Polyline
                                     coordinates={record.pathCoords}
-                                    strokeColor="#7FD89A"
-                                    strokeWidth={4}
+                                    strokeColor="#71D9A1"
+                                    strokeColors={["#71D9A1"]}
+                                    strokeWidth={6}
+                                    geodesic={false}
                                 />
+
 
                                 {/* 시작점 마커 */}
                                 <Marker
@@ -166,9 +200,9 @@ export default function RunningDetailScreen({ route }) {
                     {/* 메인 거리 카드 */}
                     <View style={styles.mainStatCard}>
                         <View style={styles.mainStatIcon}>
-                            <Ionicons name="navigate" size={32} color="#7FD89A" />
+                            <Ionicons name="navigate" size={32} color="#71D9A1" />
                         </View>
-                        <Text style={styles.mainStatLabel}>고래가 좋은 세부</Text>
+                        <Text style={styles.mainStatLabel}>{userName}님의 세부 기록</Text>
                         <Text style={styles.mainStatValue}>{record.distance.toFixed(2)}km</Text>
                         <Text style={styles.mainStatSubtext}>
                             {formatDateTime(record.date)} • {formatTime(record.time)}
@@ -197,7 +231,7 @@ export default function RunningDetailScreen({ route }) {
                     <View style={styles.infoCards}>
                         <View style={styles.infoCard}>
                             <View style={styles.infoCardHeader}>
-                                <Ionicons name="timer-outline" size={20} color="#7FD89A" />
+                                <Ionicons name="walk-outline" size={20} color="#71D9A1" />
                                 <Text style={styles.infoCardTitle}>거리</Text>
                             </View>
                             <Text style={styles.infoCardValue}>{record.distance.toFixed(2)}km</Text>
@@ -205,7 +239,7 @@ export default function RunningDetailScreen({ route }) {
 
                         <View style={styles.infoCard}>
                             <View style={styles.infoCardHeader}>
-                                <Ionicons name="flame-outline" size={20} color="#FF6B6B" />
+                                <Ionicons name="flame-outline" size={20} color="#FF8C00" />
                                 <Text style={styles.infoCardTitle}>칼로리</Text>
                             </View>
                             <Text style={styles.infoCardValue}>{record.calories || 0}kcal</Text>
@@ -222,13 +256,14 @@ export default function RunningDetailScreen({ route }) {
 
                     {/* 공유 버튼 */}
                     <TouchableOpacity style={styles.shareButton}>
-                        <Ionicons name="share-social-outline" size={20} color="#FFF" />
+                        <Ionicons name="share-social-outline" size={20} color="#999" />
                         <Text style={styles.shareButtonText}>러닝 기록 공유하기</Text>
                     </TouchableOpacity>
 
                     <View style={styles.bottomPadding} />
                 </ScrollView>
             </SafeAreaView>
+            </LinearGradient>
         </TabScreenLayout>
     );
 }
@@ -236,7 +271,7 @@ export default function RunningDetailScreen({ route }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#D4E9D7',
+        
     },
     header: {
         flexDirection: 'row',
@@ -244,13 +279,14 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#D4E9D7',
+        
     },
     backButton: {
         padding: 4,
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: 22,
+        fontWeight: "bold",
         fontWeight: '600',
         color: '#333',
     },
@@ -261,7 +297,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     titleSection: {
-        backgroundColor: '#D4E9D7',
+        
         padding: 20,
         alignItems: 'center',
     },
@@ -277,7 +313,7 @@ const styles = StyleSheet.create({
     },
     mapContainer: {
         height: 250,
-        backgroundColor: '#E8F5E9',
+        backgroundColor: '#71D9A1',
         marginTop: 8,
     },
     map: {
@@ -297,7 +333,7 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: '#D4E9D7ㄴ',
+        backgroundColor: '#71D9A1',
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 3,
@@ -319,7 +355,7 @@ const styles = StyleSheet.create({
         color: '#FFF',
     },
     mainStatCard: {
-        backgroundColor: '#D4E9D7',
+        
         marginTop: 8,
         padding: 24,
         alignItems: 'center',
@@ -335,7 +371,7 @@ const styles = StyleSheet.create({
     },
     mainStatLabel: {
         fontSize: 14,
-        color: '#999',
+        color: '#666',
         marginBottom: 8,
     },
     mainStatValue: {
@@ -413,7 +449,7 @@ const styles = StyleSheet.create({
     shareButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#FFF',
+        color: '#999',
     },
     bottomPadding: {
         height: 32,

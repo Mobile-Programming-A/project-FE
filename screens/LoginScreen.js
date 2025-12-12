@@ -1,78 +1,115 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-
 import { useRouter } from 'expo-router';
-import { defaultCharacter } from '../data/characters';
-import React, { useEffect, useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useState } from 'react';
+import Svg, { Path } from "react-native-svg";
+
 import {
     ActivityIndicator,
     Alert,
     Dimensions,
     Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
-
-WebBrowser.maybeCompleteAuthSession();
+import { defaultCharacter } from '../data/characters';
+import { auth } from '../services/config';
 
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-
-    
-    // Google 인증 요청 - iOS와 웹 클라이언트 ID 설정
-
-    const [request, response, promptAsync] = Google.useAuthRequest({
-  androidClientId: "656771928173-okuhoa8ugjk5h1hc9ln2hoig94j0.apps.googleusercontent.com",
-  iosClientId: "656771928173-okuhoa8ugjk5h1hc9ln2hoig94j0.apps.googleusercontent.com",
-  webClientId: "656771928173-3tdf4229ete02t5rkvvt7gmubcoh8e2.apps.googleusercontent.com",
-  redirectUri: "https://auth.expo.io/@seojung024/RunningApp",
-  scopes: ["profile", "email"],
-});
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
 
-    // 인증 응답 처리
-    useEffect(() => {
-        console.log('🔍 OAuth Response:', JSON.stringify(response, null, 2));
+        // 풀잎 벡터
+    const GrassVector = ({ left, bottom, rotation = 0, scale = 1 }) => (
+    <View
+        style={[
+        styles.grassVector,
+        {
+            left,
+            bottom,
+            transform: [{ rotate: `${rotation}deg` }, { scale }],
+        },
+        ]}
+    >
+        <Svg width="23" height="23" viewBox="0 0 25 25">
+        <Path
+            d="M 10 25 Q 8 18 5 10 Q 4 8 5 7 Q 6 6 7 8 Q 10 15 12 22"
+            fill="#8BAF4C"
+            opacity={0.5}
+        />
+        <Path
+            d="M 15 25 Q 14 16 12 8 Q 11.5 5 13 4 Q 14.5 3 15 6 Q 17 14 16 22"
+            fill="#9BC25C"
+            opacity={0.6}
+        />
+        <Path
+            d="M 20 25 Q 22 18 25 10 Q 26 8 25 7 Q 24 6 23 8 Q 20 15 18 22"
+            fill="#7A9E3B"
+            opacity={0.5}
+        />
+        </Svg>
+    </View>
+    );
 
-        if (response?.type === 'success') {
-            console.log('✅ 로그인 성공!');
-            const { authentication } = response;
-            handleGoogleLoginSuccess(authentication);
-        } else if (response?.type === 'error') {
-            console.error('❌ 로그인 오류:', response.error);
-            Alert.alert('로그인 실패', `구글 로그인 중 오류가 발생했습니다.\n${response.error?.message || ''}`);
-            setIsLoading(false);
-        } else if (response?.type === 'dismiss' || response?.type === 'cancel') {
-            console.log('⚠️ 로그인 취소됨');
-            setIsLoading(false);
+    // 이메일/비밀번호 로그인
+    const handleLogin = async () => {
+        if (!email.trim() || !password.trim()) {
+            Alert.alert('입력 오류', '이메일과 비밀번호를 모두 입력해주세요.');
+            return;
         }
-    }, [response]);
 
-    // 구글 로그인 성공 처리
-    const handleGoogleLoginSuccess = async (authentication) => {
+        setIsLoading(true);
         try {
-            // 사용자 정보 가져오기
-            const userInfoResponse = await fetch(
-                'https://www.googleapis.com/oauth2/v2/userinfo',
-                {
-                    headers: { Authorization: `Bearer ${authentication.accessToken}` },
-                }
-            );
+            const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+            const user = userCredential.user;
 
-            const userInfo = await userInfoResponse.json();
-            console.log('사용자 정보:', userInfo);
+            // 사용자 이메일을 AsyncStorage에 저장
+            await AsyncStorage.setItem('userEmail', user.email || email.trim());
 
-            // 로그인 성공 - 메인 화면으로 이동
+            // Firestore에 사용자 정보가 없으면 생성
+            const { collection, doc, setDoc, getDoc } = await import('firebase/firestore');
+            const { db } = await import('../services/config');
+
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            let userName = user.displayName || user.email?.split('@')[0] || '사용자';
+            
+            if (!userDoc.exists()) {
+                // 새 사용자 정보 생성
+                await setDoc(userDocRef, {
+                    email: user.email,
+                    name: userName,
+                    avatar: 'avatar1',
+                    characterId: 1,
+                    level: 1,
+                    currentExp: 0,
+                    maxExp: 100,
+                    createdAt: new Date().toISOString(),
+                });
+            } else {
+                // 기존 사용자 정보에서 이름 가져오기
+                const userData = userDoc.data();
+                userName = userData?.name || userName;
+            }
+
             Alert.alert(
                 '로그인 성공',
-                `환영합니다, ${userInfo.name}님!`,
+                `환영합니다, ${userName}님!`,
                 [
                     {
                         text: '확인',
@@ -81,87 +118,151 @@ export default function LoginScreen() {
                 ]
             );
         } catch (error) {
-            console.error('사용자 정보 가져오기 실패:', error);
-            Alert.alert('오류', '사용자 정보를 가져오는데 실패했습니다.');
+            console.error('로그인 오류:', error);
+            let errorMessage = '로그인에 실패했습니다.';
+
+            if (error.code === 'auth/user-not-found') {
+                errorMessage = '등록되지 않은 이메일입니다.';
+            } else if (error.code === 'auth/wrong-password') {
+                errorMessage = '비밀번호가 올바르지 않습니다.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = '올바른 이메일 형식이 아닙니다.';
+            } else if (error.code === 'auth/invalid-credential') {
+                errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다.';
+            }
+
+            Alert.alert('로그인 실패', errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // 구글 로그인 버튼 클릭
-    const handleGoogleLogin = async () => {
-        setIsLoading(true);
-        try {
-            await promptAsync();
-        } catch (error) {
-            console.error('구글 로그인 오류:', error);
-            Alert.alert('오류', '구글 로그인을 시작할 수 없습니다.');
-            setIsLoading(false);
-        }
-    };
-
-    const handleStartPress = () => {
-        console.log('시작하기 버튼 클릭! 메인 화면으로 이동합니다.');
-        router.replace('/(tabs)/main');
+    // 회원가입 화면으로 이동
+    const handleSignUp = () => {
+        router.push('/signup');
     };
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView 
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
             <LinearGradient
-                colors={['#D4F7C5', '#F0FDEF']}
+                colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+                locations={[0, 0.3, 1]}
                 style={StyleSheet.absoluteFillObject}
-            />
+                />
 
             <View style={styles.ellipseBackground} />
+             {/* 풀잎 랜덤 배치 */}
+                <GrassVector left={30} bottom={height * 0.6} rotation={-15} scale={1.2} />
+                <GrassVector left={80} bottom={height * 0.58} rotation={5} scale={0.9} />
+                <GrassVector left={140} bottom={height * 0.6} rotation={5} scale={0.9} />
+                <GrassVector left={width - 100} bottom={height * 0.58} rotation={10} scale={1.1} />
+                <GrassVector left={width - 50} bottom={height * 0.59} rotation={-8} scale={0.95} />
+                <GrassVector left={4} bottom={height * 0.48} rotation={12} scale={1.0} />
+                <GrassVector left={width - 138} bottom={height * 0.62} rotation={-12} scale={1.15} />
+                <GrassVector left={120} bottom={height * 0.52} rotation={8} scale={0.85} />
+                <GrassVector left={width / 2} bottom={height * 0.54} rotation={-5} scale={1.05} />
+                <GrassVector left={width - 30} bottom={height * 0.50} rotation={-5} scale={1.05} />
 
-            <View style={styles.topContainer}>
-                <Image
-                    source={defaultCharacter.image}
-                    style={styles.character}
-                />
-                <Text style={styles.subtitle}>망키와 함께 달려보세요!</Text>
-            </View>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+            >
+                <View style={styles.topContainer}>
+                    <View style={styles.speechBubbleContainer}>
+                        <View style={styles.speechBubble}>
+                            <Text style={styles.speechBubbleText}>
+                                망키와 함께 달려보세요!
+                            </Text>
+                        </View>
+                        <View style={styles.speechBubbleTail} />
+                    </View>
 
-            <View style={styles.bottomContainer}>
-                {/* 구글 로그인 버튼 */}
-                <TouchableOpacity
-                    style={styles.googleButton}
-                    onPress={handleGoogleLogin}
-                    disabled={!request || isLoading}
-                >
-                    {isLoading ? (
-                        <ActivityIndicator color="#4285F4" />
-                    ) : (
-                        <>
-                            <Ionicons name="logo-google" size={24} color="#4285F4" />
-                            <Text style={styles.googleButtonText}>Google로 로그인</Text>
-                        </>
-                    )}
-                </TouchableOpacity>
-
-                {/* 또는 구분선 */}
-                <View style={styles.dividerContainer}>
-                    <View style={styles.divider} />
-                    <Text style={styles.dividerText}>또는</Text>
-                    <View style={styles.divider} />
+                    <Image
+                        source={defaultCharacter.image}
+                        style={styles.character}
+                    />
                 </View>
 
-                {/* 시작하기 버튼 */}
-                <TouchableOpacity
-                    style={styles.kakaoButton}
-                    onPress={handleStartPress}
-                >
-                    <Text style={styles.kakaoButtonText}>로그인 없이 시작하기</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+                <View style={styles.bottomContainer}>
+                    {/* 이메일 입력 */}
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="mail-outline" size={20} color="#999" style={styles.inputIcon} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="이메일"
+                            placeholderTextColor="#999"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            editable={!isLoading}
+                        />
+                    </View>
+
+                    {/* 비밀번호 입력 */}
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="비밀번호"
+                            placeholderTextColor="#999"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showPassword}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            editable={!isLoading}
+                        />
+                        <TouchableOpacity
+                            onPress={() => setShowPassword(!showPassword)}
+                            style={styles.eyeIcon}
+                        >
+                            <Ionicons
+                                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                                size={20}
+                                color="#999"
+                            />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* 로그인 버튼 */}
+                    <TouchableOpacity
+                        style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                        onPress={handleLogin}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <Text style={styles.loginButtonText}>로그인</Text>
+                        )}
+                    </TouchableOpacity>
+
+                    {/* 회원가입 링크 */}
+                    <View style={styles.signupContainer}>
+                        <Text style={styles.signupText}>계정이 없으신가요? </Text>
+                        <TouchableOpacity onPress={handleSignUp} disabled={isLoading}>
+                            <Text style={styles.signupLink}>회원가입</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 
-// ... (styles는 동일) ...
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
     },
     ellipseBackground: {
         position: 'absolute',
@@ -173,82 +274,153 @@ const styles = StyleSheet.create({
         borderRadius: width * 1.5,
     },
     topContainer: {
-        flex: 2,
+        flex: 1.5,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 80,
+        paddingTop: 60,
         zIndex: 1,
     },
     character: {
-        width: width * 0.6,
-        height: width * 0.6,
+        width: width * 0.5,
+        height: width * 0.5,
         resizeMode: 'contain',
-        marginBottom: 20,
+        marginTop: 15,  
+        marginBottom: 15,
     },
+
     subtitle: {
         fontSize: 18,
         color: '#333',
         fontWeight: '600',
     },
     bottomContainer: {
-        flex: 1,
+        flex: 1.5,
         paddingHorizontal: 30,
-        paddingTop: 40,
+        paddingTop: 20,
         alignItems: 'center',
         zIndex: 2,
     },
-    googleButton: {
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#FFFFFF',
         borderRadius: 30,
         width: '100%',
-        paddingVertical: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-        gap: 12,
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        marginBottom: 15,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.1,
         shadowRadius: 3.84,
-        elevation: 5,
+        elevation: 3,
     },
-    googleButtonText: {
-        color: '#3C1E1E',
-        fontSize: 16,
-        fontWeight: '600',
+    inputIcon: {
+        marginRight: 12,
     },
-    dividerContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '100%',
-        marginVertical: 20,
-    },
-    divider: {
+    input: {
         flex: 1,
-        height: 1,
-        backgroundColor: '#CCCCCC',
+        fontSize: 16,
+        color: '#333',
     },
-    dividerText: {
-        marginHorizontal: 16,
-        fontSize: 14,
-        color: '#666666',
+    eyeIcon: {
+        padding: 5,
     },
-    kakaoButton: {
-        backgroundColor: '#FFFFFF',
+    loginButton: {
+        backgroundColor: '#7FD89A',
         borderRadius: 30,
         width: '100%',
         paddingVertical: 18,
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: 10,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,
         shadowRadius: 3.84,
         elevation: 5,
     },
-    kakaoButtonText: {
-        color: '#3C1E1E',
+    loginButtonDisabled: {
+        opacity: 0.6,
+    },
+    loginButtonText: {
+        color: '#FFFFFF',
         fontSize: 16,
+        fontWeight: '700',
+    },
+    signupContainer: {
+        flexDirection: 'row',
+        marginTop: 20,
+        alignItems: 'center',
+    },
+    signupText: {
+        fontSize: 14,
+        color: '#666',
+    },
+    signupLink: {
+        fontSize: 14,
+        color: '#888', 
         fontWeight: '600',
     },
-});
+    speechBubbleContainer: {
+        alignItems: 'center',
+        marginTop: 55, 
+        marginBottom: -10,
+    },
+
+
+
+    speechBubble: {
+        backgroundColor: '#fff',
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 15,
+        maxWidth: width * 0.6,
+            shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+
+
+    speechBubbleText: {
+        fontSize: 14,
+        color: '#333',
+    },
+
+    speechBubbleTail: {
+        width: 0,
+        height: 0,
+        borderLeftWidth: 10,
+        borderRightWidth: 10,
+        borderTopWidth: 12,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderTopColor: '#fff',
+        marginTop: -2,
+    },
+    backgroundGradient: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    },
+
+    ellipseBackground: {
+    position: "absolute",
+    bottom: -height * 0.1,
+    left: -width * 0.45,
+    right: -width * 0.45,
+    height: height * 0.77,
+    backgroundColor: "#C2D88B",
+    borderRadius: width * 2,
+    },
+
+    grassVector: {
+    position: "absolute",
+    },
+
+
+    });

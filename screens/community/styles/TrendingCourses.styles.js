@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#D4E9D7",
+    
   },
   header: {
     flexDirection: "row",
@@ -60,6 +60,54 @@ const styles = StyleSheet.create({
     padding: 4,
     marginLeft: 8,
   },
+  // 정렬 컨테이너
+  sortContainer: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  sortButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#71D9A1",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  sortButtonActive: {
+    backgroundColor: "#71D9A1",
+    borderColor: "#71D9A1",
+  },
+  sortButtonDisabled: {
+    backgroundColor: "#f5f5f5",
+    borderColor: "#e0e0e0",
+    opacity: 0.6,
+  },
+  sortButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#71D9A1",
+  },
+  sortButtonTextActive: {
+    color: "#fff",
+  },
+  sortButtonTextDisabled: {
+    color: "#ccc",
+  },
   scrollView: {
     flex: 1,
   },
@@ -91,7 +139,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
     borderRadius: 8,
   },
   resetSearchText: {
@@ -195,6 +243,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#999",
     lineHeight: 20,
+    marginBottom: 8,
+  },
+  // 별점 컨테이너
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#666",
   },
   likeButton: {
     position: "absolute",
@@ -233,7 +293,7 @@ const styles = StyleSheet.create({
     right: 12,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#70b93cff",
+    backgroundColor: "#71D9A1",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -257,7 +317,7 @@ const styles = StyleSheet.create({
     bottom: -15,
     right: -10,
     width: 80,
-    height: 230,
+    height: 340,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 40,
   },
@@ -286,7 +346,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#4A90E2",
   },
   fabMenuButtonGreen: {
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
+  },
+  fabMenuButtonPink: {
+    backgroundColor: "#FF6B6B",
   },
   fabMenuLabel: {
     marginRight: 12,
@@ -311,7 +374,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#65a934ff",
+    backgroundColor: "#71D9A1",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -375,7 +438,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   locationButtonActive: {
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
   },
   locationButtonText: {
     fontSize: 12,
@@ -458,7 +521,7 @@ const styles = StyleSheet.create({
   },
   loadingRouteText: {
     fontSize: 12,
-    color: "#7AC943",
+    color: "#71D9A1",
   },
   inputGroup: {
     marginBottom: 16,
@@ -502,7 +565,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   submitButton: {
-    backgroundColor: "#7AC943",
+    backgroundColor: "#71D9A1",
   },
   submitButtonText: {
     color: "#fff",

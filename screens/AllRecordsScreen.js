@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { getRunningRecords, deleteRunningRecord, migrateRecordsToFirestore } from '../services/runningRecordsService';
 import {
     Alert,
     Dimensions,
@@ -32,10 +33,31 @@ export default function AllRecordsScreen() {
     // 기록 불러오기
     const loadRecords = async () => {
         try {
-            const recordsJson = await AsyncStorage.getItem('runningRecords');
-            if (recordsJson) {
-                const loadedRecords = JSON.parse(recordsJson);
-                setRecords(loadedRecords);
+            // Firestore에서 기록 불러오기
+            const loadedRecords = await getRunningRecords();
+            setRecords(loadedRecords);
+
+            // 마이그레이션: 기존 AsyncStorage 데이터가 있으면 Firestore로 이전 (한 번만 실행)
+            try {
+                const migrationDone = await AsyncStorage.getItem('migrationToFirestoreDone');
+                if (!migrationDone) {
+                    const existingRecordsJson = await AsyncStorage.getItem('runningRecords');
+                    if (existingRecordsJson) {
+                        const existingRecords = JSON.parse(existingRecordsJson);
+                        if (existingRecords.length > 0) {
+                            await migrateRecordsToFirestore(existingRecords);
+                            // 마이그레이션 완료 후 AsyncStorage 정리 (중복 복원 방지)
+                            await AsyncStorage.removeItem('runningRecords');
+                            // 마이그레이션 후 다시 불러오기
+                            const updatedRecords = await getRunningRecords();
+                            setRecords(updatedRecords);
+                        }
+                    }
+                    // 마이그레이션 완료 표시
+                    await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
+                }
+            } catch (migrationError) {
+                console.error('마이그레이션 중 오류:', migrationError);
             }
         } catch (error) {
             console.error('기록 불러오기 실패:', error);
@@ -78,7 +100,7 @@ export default function AllRecordsScreen() {
     const handleDeleteRecord = (item) => {
         Alert.alert(
             '기록 삭제',
-            `"${item.id}" 기록을 삭제하시겠습니까?`,
+            `이 기록을 삭제하시겠습니까?`,
             [
                 {
                     text: '취소',
@@ -89,11 +111,16 @@ export default function AllRecordsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            const updatedRecords = records.filter(record => record.id !== item.id);
-                            await AsyncStorage.setItem('runningRecords', JSON.stringify(updatedRecords));
-                            setRecords(updatedRecords);
+                            // item 전체를 전달하여 날짜로도 매칭 가능하도록 함
+                            await deleteRunningRecord(item.id, item);
+                            // 약간의 지연 후 데이터 다시 불러오기 (Firestore 반영 시간)
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            // Firestore에서 다시 불러오기
+                            await loadRecords();
+                            Alert.alert('완료', '기록이 삭제되었습니다.');
                         } catch (error) {
                             console.error('삭제 실패:', error);
+                            Alert.alert('오류', `기록 삭제에 실패했습니다: ${error.message}`);
                         }
                     }
                 }
@@ -133,7 +160,7 @@ export default function AllRecordsScreen() {
                     >
                         <Polyline
                             coordinates={item.pathCoords}
-                            strokeColor="#7FD89A"
+                            strokeColor="#71D9A1"
                             strokeWidth={3}
                         />
                     </MapView>
@@ -157,7 +184,7 @@ export default function AllRecordsScreen() {
                         <Text style={styles.recordCardStatText}>{item.calories || 0}kcal</Text>
                     </View>
                     <View style={styles.recordCardStat}>
-                        <Ionicons name="walk" size={14} color="#7FD89A" />
+                        <Ionicons name="walk" size={14} color="#71D9A1" />
                         <Text style={styles.recordCardStatText}>{item.distance.toFixed(2)}km</Text>
                     </View>
                     <View style={styles.recordCardStat}>
@@ -207,7 +234,7 @@ export default function AllRecordsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#D4E9D7',
+        //backgroundColor: '#D4E9D7',
     },
     header: {
         flexDirection: 'row',
@@ -215,7 +242,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#D4E9D7',
+        //backgroundColor: '#D4E9D7',
     },
     backButton: {
         padding: 4,

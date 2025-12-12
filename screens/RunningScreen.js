@@ -1,8 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+import { saveRunningRecord, migrateRecordsToFirestore } from '../services/runningRecordsService';
+import { completeMission } from '../services/userLevelService';
+import { auth } from '../services/config';
 import {
     Alert,
     Dimensions,
@@ -225,17 +230,41 @@ export default function RunningScreen() {
     setShowCompletionModal(true);
   };
 
+  // 기록 버튼: 현재 러닝을 저장하고 종료
+  const handleRecord = () => {
+    if (distance < 0.01) {
+      Alert.alert('알림', '기록할 거리가 너무 짧습니다. 최소 0.01km 이상 달려주세요.');
+      return;
+    }
+    
+    Alert.alert(
+      '기록 저장',
+      '현재 러닝을 저장하고 종료하시겠습니까?',
+      [
+        {
+          text: '취소',
+          style: 'cancel'
+        },
+        {
+          text: '저장',
+          onPress: async () => {
+            // 러닝 중지
+            setRunningState('completed');
+            // 바로 저장
+            await handleSave();
+          }
+        }
+      ]
+    );
+  };
+
   // 러닝 기록 저장
   const handleSave = async () => {
     try {
-      // 기존 기록 불러오기
-      const existingRecordsJson = await AsyncStorage.getItem('runningRecords');
-      const existingRecords = existingRecordsJson ? JSON.parse(existingRecordsJson) : [];
-
-      // 시작 위치의 주소 가져오기 (역지오코딩)
-      let locationName = `RRC-${String(existingRecords.length + 1).padStart(3, '0')}`;
       const startCoords = pathCoords[0] || currentLocation;
 
+      // 시작 위치의 주소 가져오기 (역지오코딩)
+      let locationName = `RRC-${new Date().getTime()}`;
       if (startCoords) {
         try {
           const addressResults = await Location.reverseGeocodeAsync({
@@ -255,8 +284,10 @@ export default function RunningScreen() {
       }
 
       // 새 기록 객체 생성
+      // id는 Firestore가 자동 생성하므로 저장하지 않음
+      // locationName은 별도 필드로 저장
       const newRecord = {
-        id: locationName,
+        locationName: locationName, // id 대신 locationName으로 저장
         date: new Date().toISOString(),
         time: time,
         distance: distance,
@@ -266,30 +297,113 @@ export default function RunningScreen() {
         startLocation: startCoords,
       };
 
-      // 기록 추가 및 저장
-      const updatedRecords = [newRecord, ...existingRecords];
-      await AsyncStorage.setItem('runningRecords', JSON.stringify(updatedRecords));
+      // Firestore에 저장
+      await saveRunningRecord(newRecord);
+
+      // 마이그레이션: 기존 AsyncStorage 데이터가 있으면 Firestore로 이전 (한 번만 실행)
+      // HistoryScreen에서 이미 처리하므로 여기서는 플래그 확인만
+      try {
+        const migrationDone = await AsyncStorage.getItem('migrationToFirestoreDone');
+        if (!migrationDone) {
+          const existingRecordsJson = await AsyncStorage.getItem('runningRecords');
+          if (existingRecordsJson) {
+            const existingRecords = JSON.parse(existingRecordsJson);
+            if (existingRecords.length > 0) {
+              await migrateRecordsToFirestore(existingRecords);
+              // 마이그레이션 완료 후 AsyncStorage 정리 (중복 복원 방지)
+              await AsyncStorage.removeItem('runningRecords');
+              // 마이그레이션 완료 표시
+              await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
+            } else {
+              // 기록이 없어도 마이그레이션 완료 표시
+              await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
+            }
+          } else {
+            // AsyncStorage에 기록이 없어도 마이그레이션 완료 표시
+            await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
+          }
+        }
+      } catch (migrationError) {
+        console.error('마이그레이션 중 오류:', migrationError);
+        // 마이그레이션 실패해도 새 기록은 저장되었으므로 계속 진행
+      }
+
+      // 미션 체크 및 경험치 지급
+      const completedMissions = [];
+      let totalExpGained = 0;
+      let finalResult = null;
+
+      try {
+        const userId = auth.currentUser?.uid;
+        if (userId) {
+          // 2km 달리기 미션 체크
+          if (distance >= 2.0) {
+            const result = await completeMission(userId, '2km 달리기 완주', 50, 'mission_1');
+            if (result.success && !result.alreadyCompleted) {
+              completedMissions.push('2km 달리기 완주');
+              totalExpGained += 50;
+              finalResult = result;
+            }
+          }
+
+          // 1분 달리기 미션 체크
+          if (time >= 60) {
+            const result = await completeMission(userId, '1분 달리기 완주', 50, 'mission_2');
+            if (result.success && !result.alreadyCompleted) {
+              completedMissions.push('1분 달리기 완주');
+              totalExpGained += 50;
+              finalResult = result; // 마지막 결과 저장 (레벨업 정보)
+            }
+          }
+        }
+      } catch (missionError) {
+        console.error('미션 완료 처리 중 오류:', missionError);
+        // 미션 실패해도 기록 저장은 완료되었으므로 계속 진행
+      }
 
       setShowCompletionModal(false);
 
-      Alert.alert(
-        '저장 완료',
-        '러닝 기록이 저장되었습니다!',
-        [
-          {
-            text: '확인',
-            onPress: () => {
-              // 초기화
-              setTime(0);
-              setDistance(0);
-              setPace(0);
-              setCalories(0);
-              setPathCoords([]);
-              setRunningState('ready');
+      // 미션 완료 여부에 따라 다른 메시지 표시
+      if (completedMissions.length > 0 && finalResult) {
+        const missionList = completedMissions.map(m => `• ${m}`).join('\n');
+        Alert.alert(
+          finalResult.leveledUp ? '🎉 레벨업!' : '✅ 미션 완료!',
+          `러닝 기록이 저장되었습니다!\n\n완료한 미션:\n${missionList}\n\n획득 경험치: +${totalExpGained} EXP\n현재 레벨: ${finalResult.newLevel}\n경험치: ${finalResult.currentExp}/${finalResult.maxExp}`,
+          [
+            {
+              text: '확인',
+              onPress: () => {
+                // 초기화
+                setTime(0);
+                setDistance(0);
+                setPace(0);
+                setCalories(0);
+                setPathCoords([]);
+                setRunningState('ready');
+              }
             }
-          }
-        ]
-      );
+          ]
+        );
+      } else {
+        Alert.alert(
+          '저장 완료',
+          '러닝 기록이 저장되었습니다!',
+          [
+            {
+              text: '확인',
+              onPress: () => {
+                // 초기화
+                setTime(0);
+                setDistance(0);
+                setPace(0);
+                setCalories(0);
+                setPathCoords([]);
+                setRunningState('ready');
+              }
+            }
+          ]
+        );
+      }
     } catch (error) {
       console.error('저장 실패:', error);
       Alert.alert('오류', '기록 저장에 실패했습니다.');
@@ -319,6 +433,17 @@ export default function RunningScreen() {
   };
 
   return (
+      <LinearGradient
+          colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+          locations={[0, 0.16, 1]}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
     <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
 
@@ -326,7 +451,7 @@ export default function RunningScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.replace("/main")}
+            onPress={() => router.back()}
 
           >
             <Ionicons name="chevron-back" size={24} color="#333" />
@@ -343,7 +468,7 @@ export default function RunningScreen() {
           </View>
           <TouchableOpacity
             style={styles.menuButton}
-            onPress={() => router.push('/history')}
+            onPress={() => router.push('/(tabs)/history')}
           >
             <Ionicons name="time-outline" size={24} color="#333" />
           </TouchableOpacity>
@@ -359,7 +484,7 @@ export default function RunningScreen() {
               initialRegion={region}
               showsUserLocation={true}
               showsMyLocationButton={false}
-              followsUserLocation={runningState === 'running'}
+              followsUserLocation={false} 
               showsCompass={false}
               showsScale={false}
               toolbarEnabled={false}
@@ -376,13 +501,16 @@ export default function RunningScreen() {
                   />
                   
                   {/* 러닝 경로 - 메인 레이어 */}
-                  <Polyline
-                    coordinates={pathCoords}
-                    strokeColor="#7FD89A"
-                    strokeWidth={6}
-                    lineCap="round"
-                    lineJoin="round"
-                  />
+                 <Polyline
+                coordinates={pathCoords}
+                strokeColor="#71D9A1"
+                strokeWidth={6}
+                geodesic={true}
+                lineCap="round"
+                lineJoin="round"
+                tappable={false}
+              />
+
                 </>
               )}
 
@@ -484,7 +612,10 @@ export default function RunningScreen() {
                   />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.bookmarkButton}>
+                <TouchableOpacity 
+                  style={styles.bookmarkButton}
+                  onPress={handleRecord}
+                >
                   <Ionicons name="bookmark" size={28} color="#FFF" />
                 </TouchableOpacity>
 
@@ -506,47 +637,102 @@ export default function RunningScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalIcon}>
-                <Ionicons name="flag" size={40} color="#6B7FFF" />
+                <Ionicons 
+                  name={distance < 0.01 ? "close-circle" : "flag"} 
+                  size={40} 
+                  color={distance < 0.01 ? "#DC6B6B" : "#6B7FFF"} 
+                />
               </View>
 
-              <Text style={styles.modalTitle}>러닝 완료!</Text>
+              <Text style={styles.modalTitle}>
+                {distance < 0.01 ? "러닝 기록 없음" : "러닝 완료!"}
+              </Text>
 
-              <View style={styles.modalStats}>
-                <View style={styles.modalStatRow}>
-                  <Text style={styles.modalStatLabel}>거리</Text>
-                  <Text style={styles.modalStatValue}>{distance.toFixed(2)} km</Text>
+              {distance < 0.01 ? (
+                <View style={styles.modalWarningContainer}>
+                  <Text style={styles.modalWarningText}>
+                    기록할 거리가 너무 짧습니다.{'\n'}
+                    최소 0.01km 이상 달려야 기록이 저장됩니다.
+                  </Text>
                 </View>
-                <View style={styles.modalStatRow}>
-                  <Text style={styles.modalStatLabel}>시간</Text>
-                  <Text style={styles.modalStatValue}>{formatTime(time)}</Text>
+              ) : (
+                <View style={styles.modalStats}>
+                  <View style={styles.modalStatRow}>
+                    <Text style={styles.modalStatLabel}>거리</Text>
+                    <Text style={styles.modalStatValue}>{distance.toFixed(2)} km</Text>
+                  </View>
+                  <View style={styles.modalStatRow}>
+                    <Text style={styles.modalStatLabel}>시간</Text>
+                    <Text style={styles.modalStatValue}>{formatTime(time)}</Text>
+                  </View>
+                  <View style={styles.modalStatRow}>
+                    <Text style={styles.modalStatLabel}>페이스</Text>
+                    <Text style={styles.modalStatValue}>
+                      {pace > 0 ? `${formatPace(pace)} /km` : '-'}
+                    </Text>
+                  </View>
+                  <View style={styles.modalStatRow}>
+                    <Text style={styles.modalStatLabel}>칼로리</Text>
+                    <Text style={styles.modalStatValue}>{calories} kcal</Text>
+                  </View>
                 </View>
-                <View style={styles.modalStatRow}>
-                  <Text style={styles.modalStatLabel}>페이스</Text>
-                  <Text style={styles.modalStatValue}>{formatPace(pace)} /km</Text>
-                </View>
-                <View style={styles.modalStatRow}>
-                  <Text style={styles.modalStatLabel}>칼로리</Text>
-                  <Text style={styles.modalStatValue}>{calories} kcal</Text>
-                </View>
+              )}
+
+              <View style={styles.modalButtonContainer}>
+                {distance < 0.01 ? (
+                  <TouchableOpacity
+                    style={[styles.confirmButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowCompletionModal(false);
+                      setRunningState('ready');
+                      // 초기화
+                      setTime(0);
+                      setDistance(0);
+                      setPace(0);
+                      setCalories(0);
+                      setPathCoords([]);
+                    }}
+                  >
+                    <Text style={styles.confirmButtonText}>확인</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.confirmButton, styles.cancelButton]}
+                      onPress={() => {
+                        setShowCompletionModal(false);
+                        setRunningState('ready');
+                        // 초기화
+                        setTime(0);
+                        setDistance(0);
+                        setPace(0);
+                        setCalories(0);
+                        setPathCoords([]);
+                      }}
+                    >
+                      <Text style={[styles.confirmButtonText, styles.cancelButtonText]}>취소</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.confirmButton}
+                      onPress={handleSave}
+                    >
+                      <Text style={styles.confirmButtonText}>저장하기</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
-
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={handleSave}
-              >
-                <Text style={styles.confirmButtonText}>저장하기</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </Modal>
       </SafeAreaView>
+      </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#D4E9D7',
+    
   },
   header: {
     flexDirection: 'row',
@@ -554,7 +740,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#D4E9D7',
+   
   },
   backButton: {
     padding: 4,
@@ -564,8 +750,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: "bold",
+    lineHeight: 24,     
     color: '#333',
   },
   headerSubtitle: {
@@ -586,7 +773,7 @@ const styles = StyleSheet.create({
   },
   mapPlaceholder: {
     flex: 1,
-    backgroundColor: '#E8F5E9',
+    
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -617,7 +804,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#71D9A1',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -635,7 +822,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   infoCard: {
-    backgroundColor: '#D4E9D7',
+    
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 24,
@@ -697,11 +884,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#7FD89A',
+    backgroundColor: '#71D9A1',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-    shadowColor: '#7FD89A',
+    shadowColor: '#71D9A1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -709,7 +896,7 @@ const styles = StyleSheet.create({
   },
   startText: {
     fontSize: 14,
-    color: '#999',
+    color: '#666',
   },
   runningControls: {
     flexDirection: 'row',
@@ -762,7 +949,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: width * 0.8,
-    backgroundColor: '#D4E9D7',
+    
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
@@ -802,10 +989,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  confirmButton: {
+  modalWarningContainer: {
     width: '100%',
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: '#FFF5F5',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFE0E0',
+  },
+  modalWarningText: {
+    fontSize: 14,
+    color: '#DC6B6B',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalButtonContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  confirmButton: {
+    flex: 1,
     height: 50,
-    backgroundColor: '#6B7FFF',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -814,5 +1020,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
+  },
+  cancelButton: {
+    backgroundColor: '#F0F0F0',
+  },
+  cancelButtonText: {
+    color: '#666',
   },
 });

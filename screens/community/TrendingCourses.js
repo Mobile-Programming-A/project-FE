@@ -11,9 +11,12 @@ import {
   Modal,
   Alert,
   Animated,
+  StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker, Polyline } from "react-native-maps";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
 import styles from "./styles/TrendingCourses.styles";
 import {
   getAllCourses,
@@ -25,12 +28,30 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // 임시 사용자 ID (실제로는 인증 시스템에서 가져와야 함)
 const CURRENT_USER_ID = "currentUser";
 
+// 두 지점 간의 거리 계산 (Haversine formula)
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // 지구 반지름 (km)
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c;
+  return distance;
+};
+
 export default function TrendingCourses({ navigation }) {
   const [searchText, setSearchText] = useState("");
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [likedCourses, setLikedCourses] = useState({});
+  const [sortType, setSortType] = useState("likes"); // "likes" or "distance"
+  const [userLocation, setUserLocation] = useState(null);
 
   // 코스 등록 모달 관련 상태
   const [modalVisible, setModalVisible] = useState(false);
@@ -92,7 +113,25 @@ export default function TrendingCourses({ navigation }) {
       {
         translateY: fabAnimation.interpolate({
           inputRange: [0, 1],
-          outputRange: [0, -150],
+          outputRange: [0, -160],
+        }),
+      },
+      {
+        scale: fabAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 1],
+        }),
+      },
+    ],
+    opacity: fabAnimation,
+  };
+
+  const menu3Style = {
+    transform: [
+      {
+        translateY: fabAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -240],
         }),
       },
       {
@@ -116,6 +155,27 @@ export default function TrendingCourses({ navigation }) {
     ],
   };
 
+  // 사용자 위치 가져오기
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          console.log("위치 권한이 거부되었습니다.");
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      } catch (error) {
+        console.error("위치 가져오기 실패:", error);
+      }
+    })();
+  }, []);
+
   // Firestore에서 러닝 코스 데이터 불러오기
   useEffect(() => {
     loadCourses();
@@ -132,7 +192,7 @@ export default function TrendingCourses({ navigation }) {
     return unsubscribe;
   }, [navigation]);
 
-  // 검색어 변경 시 필터링 및 좋아요순 정렬
+  // 검색어 및 정렬 타입 변경 시 필터링 및 정렬
   useEffect(() => {
     let filtered = courses;
 
@@ -148,24 +208,47 @@ export default function TrendingCourses({ navigation }) {
       );
     }
 
-    // 좋아요 + 별점 합산으로 정렬 (내림차순)
+    // 정렬
     const sorted = [...filtered].sort((a, b) => {
-      const scoreA = (a.likes || 0) + (a.averageRating || 0);
-      const scoreB = (b.likes || 0) + (b.averageRating || 0);
-      return scoreB - scoreA;
+      if (sortType === "likes") {
+        // 좋아요 + 별점 합산으로 정렬 (좋아요 가중치 10배)
+        const scoreA = (a.likes || 0) * 10 + (a.averageRating || 0);
+        const scoreB = (b.likes || 0) * 10 + (b.averageRating || 0);
+        return scoreB - scoreA;
+      } else if (sortType === "distance" && userLocation) {
+        // 사용자 위치와의 거리순 정렬 (오름차순)
+        const distanceA = a.startLocation
+          ? calculateDistance(
+              userLocation.latitude,
+              userLocation.longitude,
+              a.startLocation.latitude,
+              a.startLocation.longitude
+            )
+          : Infinity;
+        const distanceB = b.startLocation
+          ? calculateDistance(
+              userLocation.latitude,
+              userLocation.longitude,
+              b.startLocation.latitude,
+              b.startLocation.longitude
+            )
+          : Infinity;
+        return distanceA - distanceB;
+      }
+      return 0;
     });
 
     setFilteredCourses(sorted);
-  }, [searchText, courses]);
+  }, [searchText, courses, sortType, userLocation]);
 
   const loadCourses = async () => {
     try {
       setLoading(true);
       const coursesData = await getAllCourses();
-      // 좋아요 + 별점 합산으로 정렬
+      // 좋아요 + 별점 합산으로 정렬 (좋아요 가중치 10배)
       const sortedCourses = coursesData.sort((a, b) => {
-        const scoreA = (a.likes || 0) + (a.averageRating || 0);
-        const scoreB = (b.likes || 0) + (b.averageRating || 0);
+        const scoreA = (a.likes || 0) * 10 + (a.averageRating || 0);
+        const scoreB = (b.likes || 0) * 10 + (b.averageRating || 0);
         return scoreB - scoreA;
       });
       setCourses(sortedCourses);
@@ -225,8 +308,8 @@ export default function TrendingCourses({ navigation }) {
                 : course
             )
             .sort((a, b) => {
-              const scoreA = (a.likes || 0) + (a.averageRating || 0);
-              const scoreB = (b.likes || 0) + (b.averageRating || 0);
+              const scoreA = (a.likes || 0) * 10 + (a.averageRating || 0);
+              const scoreB = (b.likes || 0) * 10 + (b.averageRating || 0);
               return scoreB - scoreA;
             })
         );
@@ -388,7 +471,12 @@ export default function TrendingCourses({ navigation }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
         <StatusBar barStyle="dark-content" />
 
         {/* 헤더 */}
@@ -397,12 +485,10 @@ export default function TrendingCourses({ navigation }) {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back" size={28} color="#333" />
+            <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>지금 뜨는 러닝코스</Text>
-          <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-horizontal" size={28} color="#333" />
-          </TouchableOpacity>
+          <View style={styles.moreButton} />
         </View>
 
         {/* 검색바 */}
@@ -430,6 +516,62 @@ export default function TrendingCourses({ navigation }) {
           )}
         </View>
 
+        {/* 정렬 선택 */}
+        <View style={styles.sortContainer}>
+          <TouchableOpacity
+            style={[
+              styles.sortButton,
+              sortType === "likes" && styles.sortButtonActive,
+            ]}
+            onPress={() => setSortType("likes")}
+          >
+            <Ionicons
+              name="heart"
+              size={16}
+              color={sortType === "likes" ? "#fff" : "#71D9A1"}
+            />
+            <Text
+              style={[
+                styles.sortButtonText,
+                sortType === "likes" && styles.sortButtonTextActive,
+              ]}
+            >
+              좋아요순
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.sortButton,
+              sortType === "distance" && styles.sortButtonActive,
+              !userLocation && styles.sortButtonDisabled,
+            ]}
+            onPress={() => userLocation && setSortType("distance")}
+            disabled={!userLocation}
+          >
+            <Ionicons
+              name="navigate"
+              size={16}
+              color={
+                !userLocation
+                  ? "#ccc"
+                  : sortType === "distance"
+                  ? "#fff"
+                  : "#71D9A1"
+              }
+            />
+            <Text
+              style={[
+                styles.sortButtonText,
+                sortType === "distance" && styles.sortButtonTextActive,
+                !userLocation && styles.sortButtonTextDisabled,
+              ]}
+            >
+              정확도순
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* 코스 리스트 */}
         <ScrollView
           style={styles.scrollView}
@@ -438,7 +580,7 @@ export default function TrendingCourses({ navigation }) {
         >
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#7AC943" />
+              <ActivityIndicator size="large" color="#71D9A1" />
               <Text style={styles.loadingText}>로딩 중...</Text>
             </View>
           ) : filteredCourses.length === 0 ? (
@@ -515,7 +657,7 @@ export default function TrendingCourses({ navigation }) {
                         >
                           <Marker
                             coordinate={course.startLocation}
-                            pinColor="#7AC943"
+                            pinColor="#71D9A1"
                             title="시작"
                           />
                           <Marker
@@ -535,7 +677,7 @@ export default function TrendingCourses({ navigation }) {
                           course.routeCoordinates.length > 0 ? (
                             <Polyline
                               coordinates={course.routeCoordinates}
-                              strokeColor="#7AC943"
+                              strokeColor="#71D9A1"
                               strokeWidth={4}
                               lineCap="round"
                               lineJoin="round"
@@ -546,7 +688,7 @@ export default function TrendingCourses({ navigation }) {
                                 course.startLocation,
                                 course.endLocation,
                               ]}
-                              strokeColor="#7AC943"
+                              strokeColor="#71D9A1"
                               strokeWidth={3}
                               strokePattern={[1, 1]}
                             />
@@ -554,7 +696,7 @@ export default function TrendingCourses({ navigation }) {
                         </MapView>
                       ) : (
                         <View style={styles.mapPlaceholder}>
-                          <Ionicons name="location" size={40} color="#7AC943" />
+                          <Ionicons name="location" size={40} color="#71D9A1" />
                         </View>
                       )}
                     </View>
@@ -567,7 +709,7 @@ export default function TrendingCourses({ navigation }) {
 
                       <View style={styles.courseStats}>
                         <View style={styles.statItem}>
-                          <Ionicons name="navigate" size={16} color="#7AC943" />
+                          <Ionicons name="navigate" size={16} color="#71D9A1" />
                           <Text style={styles.statValue}>
                             {course.distance}
                           </Text>
@@ -594,44 +736,41 @@ export default function TrendingCourses({ navigation }) {
                           {course.description}
                         </Text>
                       )}
+
+                      {/* 별점 표시 */}
+                      <View style={styles.ratingContainer}>
+                        <Ionicons name="star" size={16} color="#FFD700" />
+                        <Text style={styles.ratingText}>
+                          {course.averageRating
+                            ? course.averageRating.toFixed(1)
+                            : "0.0"}
+                          ({course.reviewCount || 0}개)
+                        </Text>
+                      </View>
                     </View>
                   </TouchableOpacity>
 
-                  {/* 별점 및 좋아요 버튼 컨테이너 */}
-                  <View style={styles.ratingLikeContainer}>
-                    {/* 별점 표시 */}
-                    <View style={styles.ratingBadge}>
-                      <Ionicons name="star" size={14} color="#FFD700" />
-                      <Text style={styles.ratingText}>
-                        {course.averageRating
-                          ? course.averageRating.toFixed(1)
-                          : "0.0"}
-                        ({course.reviewCount || 0}개)
-                      </Text>
-                    </View>
-
-                    {/* 좋아요 버튼 */}
-                    <TouchableOpacity
-                      style={styles.likeButton}
-                      onPress={() => handleLike(course.id)}
+                  {/* 좋아요 버튼 */}
+                  <TouchableOpacity
+                    style={styles.likeButton}
+                    onPress={() => handleLike(course.id)}
+                  >
+                    <Ionicons
+                      name={
+                        likedCourses[course.id] ? "heart" : "heart-outline"
+                      }
+                      size={24}
+                      color={likedCourses[course.id] ? "#FF6B6B" : "#999"}
+                    />
+                    <Text
+                      style={[
+                        styles.likeCount,
+                        likedCourses[course.id] && styles.likeCountActive,
+                      ]}
                     >
-                      <Ionicons
-                        name={
-                          likedCourses[course.id] ? "heart" : "heart-outline"
-                        }
-                        size={24}
-                        color={likedCourses[course.id] ? "#FF6B6B" : "#999"}
-                      />
-                      <Text
-                        style={[
-                          styles.likeCount,
-                          likedCourses[course.id] && styles.likeCountActive,
-                        ]}
-                      >
-                        {course.likes || 0}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                      {course.likes || 0}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               ))}
             </View>
@@ -644,7 +783,7 @@ export default function TrendingCourses({ navigation }) {
           {fabOpen && <View style={styles.fabBackground} />}
 
           {/* 내 코스 목록 메뉴 */}
-          <Animated.View style={[styles.fabMenuItem, menu2Style]}>
+          <Animated.View style={[styles.fabMenuItem, menu3Style]}>
             <TouchableOpacity
               style={[styles.fabMenuButton, styles.fabMenuButtonBlue]}
               onPress={() => {
@@ -653,6 +792,19 @@ export default function TrendingCourses({ navigation }) {
               }}
             >
               <Ionicons name="list" size={28} color="#fff" />
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* 찜한 코스 목록 메뉴 */}
+          <Animated.View style={[styles.fabMenuItem, menu2Style]}>
+            <TouchableOpacity
+              style={[styles.fabMenuButton, styles.fabMenuButtonPink]}
+              onPress={() => {
+                toggleFab();
+                navigation.navigate("LikedCourses");
+              }}
+            >
+              <Ionicons name="heart" size={28} color="#fff" />
             </TouchableOpacity>
           </Animated.View>
 
@@ -709,7 +861,7 @@ export default function TrendingCourses({ navigation }) {
                     {newCourse.startLocation && (
                       <Marker
                         coordinate={newCourse.startLocation}
-                        pinColor="#7AC943"
+                        pinColor="#71D9A1"
                         title="시작 위치"
                       />
                     )}
@@ -734,7 +886,7 @@ export default function TrendingCourses({ navigation }) {
                     newCourse.routeCoordinates.length > 0 ? (
                       <Polyline
                         coordinates={newCourse.routeCoordinates}
-                        strokeColor="#7AC943"
+                        strokeColor="#71D9A1"
                         strokeWidth={4}
                         lineCap="round"
                         lineJoin="round"
@@ -769,7 +921,7 @@ export default function TrendingCourses({ navigation }) {
                         name="play-circle"
                         size={20}
                         color={
-                          selectingLocation === "start" ? "#fff" : "#7AC943"
+                          selectingLocation === "start" ? "#fff" : "#71D9A1"
                         }
                       />
                       <Text
@@ -872,7 +1024,7 @@ export default function TrendingCourses({ navigation }) {
                   <Text style={styles.mapHint}>
                     {loadingRoute ? (
                       <View style={styles.loadingRouteContainer}>
-                        <ActivityIndicator size="small" color="#7AC943" />
+                        <ActivityIndicator size="small" color="#71D9A1" />
                         <Text style={styles.loadingRouteText}>
                           경로를 계산하는 중...
                         </Text>

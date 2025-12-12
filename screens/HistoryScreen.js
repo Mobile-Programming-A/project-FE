@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+
 import { useCallback, useState } from 'react';
 import {
     Alert,
@@ -17,6 +19,7 @@ import {
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import MapView, { Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { deleteRunningRecord, getRunningRecords, migrateRecordsToFirestore } from '../services/runningRecordsService';
 
 const { width } = Dimensions.get('window');
 
@@ -39,11 +42,39 @@ export default function HistoryScreen() {
     // 기록 불러오기
     const loadRecords = async () => {
         try {
-            const recordsJson = await AsyncStorage.getItem('runningRecords');
-            if (recordsJson) {
-                const loadedRecords = JSON.parse(recordsJson);
-                setRecords(loadedRecords);
-                updateChartData(loadedRecords, selectedPeriod);
+            // Firestore에서 기록 불러오기
+            const loadedRecords = await getRunningRecords();
+            setRecords(loadedRecords);
+            updateChartData(loadedRecords, selectedPeriod);
+
+            // 마이그레이션: 기존 AsyncStorage 데이터가 있으면 Firestore로 이전 (한 번만 실행)
+            try {
+                const migrationDone = await AsyncStorage.getItem('migrationToFirestoreDone');
+                if (!migrationDone) {
+                    const existingRecordsJson = await AsyncStorage.getItem('runningRecords');
+                    if (existingRecordsJson) {
+                        const existingRecords = JSON.parse(existingRecordsJson);
+                        if (existingRecords.length > 0) {
+                            await migrateRecordsToFirestore(existingRecords);
+                            // 마이그레이션 완료 후 AsyncStorage 정리 (중복 복원 방지)
+                            await AsyncStorage.removeItem('runningRecords');
+                            // 마이그레이션 완료 표시
+                            await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
+                            // 마이그레이션 후 다시 불러오기
+                            const updatedRecords = await getRunningRecords();
+                            setRecords(updatedRecords);
+                            updateChartData(updatedRecords, selectedPeriod);
+                        } else {
+                            // 기록이 없어도 마이그레이션 완료 표시
+                            await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
+                        }
+                    } else {
+                        // AsyncStorage에 기록이 없어도 마이그레이션 완료 표시
+                        await AsyncStorage.setItem('migrationToFirestoreDone', 'true');
+                    }
+                }
+            } catch (migrationError) {
+                console.error('마이그레이션 중 오류:', migrationError);
             }
         } catch (error) {
             console.error('기록 불러오기 실패:', error);
@@ -254,10 +285,14 @@ export default function HistoryScreen() {
     };
 
     // 기록 삭제
-    const handleDeleteRecord = (item) => {
+    const handleDeleteRecord = async (item) => {
+        console.log('=== 기록 삭제 시작 ===');
+        console.log('삭제할 기록 ID:', item.id);
+        console.log('전체 item:', item);
+
         Alert.alert(
             '기록 삭제',
-            `"${item.id}" 기록을 삭제하시겠습니까?`,
+            `이 기록을 삭제하시겠습니까?`,
             [
                 {
                     text: '취소',
@@ -268,20 +303,19 @@ export default function HistoryScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            // 해당 기록을 제외한 나머지 기록들만 필터링
-                            const updatedRecords = records.filter(record => record.id !== item.id);
-
-                            // AsyncStorage에 업데이트된 기록 저장
-                            await AsyncStorage.setItem('runningRecords', JSON.stringify(updatedRecords));
-
-                            // 상태 업데이트
-                            setRecords(updatedRecords);
-                            updateChartData(updatedRecords, selectedPeriod);
-
-                            Alert.alert('삭제 완료', '기록이 삭제되었습니다.');
+                            console.log('삭제 실행 중...');
+                            // item 전체를 전달하여 날짜로도 매칭 가능하도록 함
+                            await deleteRunningRecord(item.id, item);
+                            console.log('삭제 완료, 데이터 다시 불러오기...');
+                            // 약간의 지연 후 데이터 다시 불러오기 (Firestore 반영 시간)
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            await loadRecords();
+                            console.log('데이터 다시 불러오기 완료');
+                            Alert.alert('완료', '기록이 삭제되었습니다.');
                         } catch (error) {
-                            console.error('삭제 실패:', error);
-                            Alert.alert('오류', '기록 삭제에 실패했습니다.');
+                            console.error('기록 삭제 실패:', error);
+                            console.error('에러 상세:', error.message);
+                            Alert.alert('오류', `기록 삭제에 실패했습니다: ${error.message}`);
                         }
                     }
                 }
@@ -321,7 +355,7 @@ export default function HistoryScreen() {
                     >
                         <Polyline
                             coordinates={item.pathCoords}
-                            strokeColor="#7FD89A"
+                            strokeColor="#71D9A1"
                             strokeWidth={3}
                         />
                     </MapView>
@@ -334,7 +368,9 @@ export default function HistoryScreen() {
 
             {/* 오른쪽 정보 */}
             <View style={styles.recordCardInfo}>
-                <Text style={styles.recordCardTitle}>{item.id}</Text>
+                <Text style={styles.recordCardTitle}>
+                    {item.date ? formatSimpleDate(item.date) : '기록'}
+                </Text>
                 <Text style={styles.recordCardDate}>
                     {formatSimpleDate(item.date)} | {formatTimeRange(item.date, item.time)}
                 </Text>
@@ -345,7 +381,7 @@ export default function HistoryScreen() {
                         <Text style={styles.recordCardStatText}>{item.calories || 0}kcal</Text>
                     </View>
                     <View style={styles.recordCardStat}>
-                        <Ionicons name="walk" size={14} color="#7FD89A" />
+                        <Ionicons name="walk" size={14} color="#71D9A1" />
                         <Text style={styles.recordCardStatText}>{item.distance.toFixed(2)}km</Text>
                     </View>
                     <View style={styles.recordCardStat}>
@@ -366,6 +402,10 @@ export default function HistoryScreen() {
     };
 
     return (
+    <LinearGradient
+        colors={['#B8E6F0', '#C8EDD4', '#D4E9D7']}
+        style={{ flex: 1 }}
+    >
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
 
@@ -373,18 +413,16 @@ export default function HistoryScreen() {
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.backButton}
-                    onPress={() => router.replace('/(tabs)/main')}
+                    onPress={() => router.back()}
                 >
                     <Ionicons name="chevron-back" size={24} color="#333" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>러닝 기록</Text>
-                <TouchableOpacity style={styles.menuButton}>
-                    <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
-                </TouchableOpacity>
+                <View style={styles.menuButton} />
             </View>
 
-            <ScrollView 
-                style={styles.content} 
+            <ScrollView
+                style={styles.content}
                 showsVerticalScrollIndicator={false}
             >
                 {/* 기간 선택 버튼 */}
@@ -442,7 +480,7 @@ export default function HistoryScreen() {
                                 propsForDots: {
                                     r: '6',
                                     strokeWidth: '2',
-                                    stroke: '#7FD89A',
+                                    stroke: '#71D9A1',
                                     fill: '#FFFFFF',
                                 },
                                 propsForBackgroundLines: {
@@ -489,7 +527,7 @@ export default function HistoryScreen() {
 
                     {records.length === 0 ? (
                         <View style={styles.emptyState}>
-                            <Ionicons name="fitness-outline" size={48} color="#CCC" />
+                            <Ionicons name="fitness-outline" size={48} color="#999" />
                             <Text style={styles.emptyText}>아직 러닝 기록이 없습니다</Text>
                             <Text style={styles.emptySubtext}>첫 러닝을 시작해보세요!</Text>
                         </View>
@@ -505,13 +543,14 @@ export default function HistoryScreen() {
                 </View>
             </ScrollView>
         </SafeAreaView>
+        </LinearGradient>  
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#D4E9D7',
+        
     },
     header: {
         flexDirection: 'row',
@@ -519,7 +558,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#D4E9D7',
+        
     },
     backButton: {
         padding: 4,
@@ -539,7 +578,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 16,
         paddingVertical: 16,
-        backgroundColor: '#D4E9D7',
+        
         gap: 8,
     },
     periodButton: {
@@ -551,7 +590,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     periodButtonActive: {
-        backgroundColor: '#7FD89A',
+        backgroundColor: '#71D9A1',
     },
     periodButtonText: {
         fontSize: 13,
@@ -588,7 +627,7 @@ const styles = StyleSheet.create({
     chartSubtitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#7FD89A',
+        color: '#71D9A1',
     },
     chartWrapper: {
         borderRadius: 16,
@@ -601,7 +640,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
     },
     recordsSection: {
-        backgroundColor: '#D4E9D7',
+        
         marginTop: 16,
         padding: 16,
         paddingBottom: 40,
@@ -619,7 +658,7 @@ const styles = StyleSheet.create({
     },
     recordsSubtitle: {
         fontSize: 14,
-        color: '#7FD89A',
+        color: '#999',
     },
     recordsList: {
         gap: 12,
