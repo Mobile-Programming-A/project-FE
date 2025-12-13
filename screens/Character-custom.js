@@ -264,7 +264,7 @@ export default function CharacterCustomScreen() {
             badge_first_step: true,
           });
 
-          console.log("🎉 첫 방문 뱃지 획득!");
+          console.log("첫 방문 뱃지 획득!");
           setBadgeFirstStep(true);
 
           // 뱃지 획득 모달 표시
@@ -296,7 +296,7 @@ export default function CharacterCustomScreen() {
             badge_2: true,
           });
 
-          console.log("🏆 레벨 10 달성 뱃지 획득!");
+          console.log("레벨 10 달성 뱃지 획득!");
           setBadge2(true);
 
           // 뱃지 획득 모달 표시
@@ -342,7 +342,7 @@ export default function CharacterCustomScreen() {
             badge_4: true,
           });
 
-          console.log("❤️ 친구 3명 이상 뱃지 획득!");
+          console.log("친구 3명 이상 뱃지 획득!");
           setBadge4(true);
 
           // 뱃지 획득 모달 표시
