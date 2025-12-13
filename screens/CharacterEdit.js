@@ -218,7 +218,7 @@ export default function CharacterEditScreen() {
     // 캐릭터 잠금 여부 확인
     const isCharacterLocked = (character) => {
         const locked = userLevel < character.level;
-        console.log(`캐릭터 잠금 체크: ${character.name} (필요: Lv.${character.level}, 현재: Lv.${userLevel}) => ${locked ? '🔒 잠김' : '✅ 해제'}`);
+        console.log(`캐릭터 잠금 체크: ${character.name} (필요: Lv.${character.level}, 현재: Lv.${userLevel}) => ${locked ? '잠김' : '해제'}`);
         return locked;
     };
 
