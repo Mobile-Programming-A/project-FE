@@ -25,7 +25,6 @@ import {
 } from "../../services/runningCourseService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// 임시 사용자 ID (실제로는 인증 시스템에서 가져와야 함)
 const CURRENT_USER_ID = "currentUser";
 
 // 두 지점 간의 거리 계산 (Haversine formula)
@@ -50,7 +49,7 @@ export default function TrendingCourses({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [likedCourses, setLikedCourses] = useState({});
-  const [sortType, setSortType] = useState("likes"); // "likes" or "distance"
+  const [sortType, setSortType] = useState("likes");
   const [userLocation, setUserLocation] = useState(null);
 
   // 코스 등록 모달 관련 상태
@@ -245,7 +244,7 @@ export default function TrendingCourses({ navigation }) {
     try {
       setLoading(true);
       const coursesData = await getAllCourses();
-      // 좋아요 + 별점 합산으로 정렬 (좋아요 가중치 10배)
+      // 좋아요 + 별점 합산으로 정렬
       const sortedCourses = coursesData.sort((a, b) => {
         const scoreA = (a.likes || 0) * 10 + (a.averageRating || 0);
         const scoreB = (b.likes || 0) * 10 + (b.averageRating || 0);
@@ -756,9 +755,7 @@ export default function TrendingCourses({ navigation }) {
                     onPress={() => handleLike(course.id)}
                   >
                     <Ionicons
-                      name={
-                        likedCourses[course.id] ? "heart" : "heart-outline"
-                      }
+                      name={likedCourses[course.id] ? "heart" : "heart-outline"}
                       size={24}
                       color={likedCourses[course.id] ? "#FF6B6B" : "#999"}
                     />

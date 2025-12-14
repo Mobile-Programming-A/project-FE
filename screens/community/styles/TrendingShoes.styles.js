@@ -3,7 +3,6 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    
   },
   header: {
     flexDirection: "row",
@@ -66,7 +65,7 @@ const styles = StyleSheet.create({
     position: "relative",
     zIndex: 1000,
     flexDirection: "row",
-    justifyContent: "space-between", // 양쪽 끝 정렬
+    justifyContent: "space-between",
     alignItems: "center",
   },
   leftButtonGroup: {
