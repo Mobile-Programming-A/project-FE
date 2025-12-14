@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
-  FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import styles from "./styles/TrendingShoes.styles";
@@ -159,7 +158,6 @@ export default function TrendingShoes({ navigation }) {
   };
 
   const handleToggleLike = async (shoeId, event) => {
-    // 이벤트 전파 중지 (카드 클릭 이벤트와 분리)
     event.stopPropagation();
 
     try {
@@ -308,14 +306,13 @@ export default function TrendingShoes({ navigation }) {
 
   return (
     <View style={{ flex: 1 }}>
-       <LinearGradient
-      colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
-      style={StyleSheet.absoluteFillObject}
-    />
+      <LinearGradient
+        colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+        style={StyleSheet.absoluteFillObject}
+      />
 
-    {/* SafeAreaView는 배경 투명으로 */}
-    <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
-
+      {/* SafeAreaView는 배경 투명으로 */}
+      <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
         <StatusBar barStyle="dark-content" />
 
         {/* 헤더 */}
@@ -584,7 +581,7 @@ export default function TrendingShoes({ navigation }) {
                         <Text style={styles.likesCountText}>{shoe.likes}</Text>
                       </View>
                     )}
-                    {/* 찜 버튼 (우측 하단) - 항상 표시 */}
+                    {/* 찜 버튼 (우측 하단) */}
                     <TouchableOpacity
                       style={styles.likedBadge}
                       onPress={(e) => handleToggleLike(shoe.id, e)}
@@ -715,7 +712,7 @@ export default function TrendingShoes({ navigation }) {
                   />
                 </View>
 
-                {/* 성별과 종류 드롭다운 (1:1 비율) */}
+                {/* 성별과 종류 드롭다운 */}
                 <View style={styles.inputRow}>
                   {/* 성별 선택 */}
                   <View style={styles.inputHalf}>

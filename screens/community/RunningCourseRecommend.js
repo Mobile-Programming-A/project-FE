@@ -34,7 +34,7 @@ export default function RunningCourseRecommend({ navigation }) {
     description: "",
     routeCoordinates: [], // 실제 경로 좌표들
   });
-  const [selectingLocation, setSelectingLocation] = useState(null); // 'start', 'end', or waypoint index
+  const [selectingLocation, setSelectingLocation] = useState(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
 
   // 기본 지도 중심 (서울)
@@ -203,7 +203,7 @@ export default function RunningCourseRecommend({ navigation }) {
       // 모든 포인트 조합: 시작 + 경유지들 + 종료
       const allPoints = [start, ...waypoints.filter((wp) => wp !== null), end];
 
-      // OSRM URL 생성 (모든 포인트를 세미콜론으로 연결)
+      // OSRM URL 생성
       const coordinates = allPoints
         .map((point) => `${point.longitude},${point.latitude}`)
         .join(";");
@@ -220,7 +220,7 @@ export default function RunningCourseRecommend({ navigation }) {
           longitude: lng,
         }));
 
-        // 거리 계산 (미터를 킬로미터로 변환)
+        // 거리 계산 (미터->킬로미터 변환)
         const distanceInKm = (route.distance / 1000).toFixed(2);
 
         setNewCourse((prev) => ({

@@ -13,11 +13,10 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import styles from "./styles/RunningCourseDetail.styles";
-
 
 import {
   getCourseById,
@@ -28,7 +27,6 @@ import {
   deleteCourseReview,
 } from "../../services/runningCourseService";
 
-// 임시 사용자 ID (실제로는 인증 시스템에서 가져와야 함)
 const CURRENT_USER_ID = "currentUser";
 
 export default function RunningCourseDetail({ route, navigation }) {
@@ -84,13 +82,20 @@ export default function RunningCourseDetail({ route, navigation }) {
   }, [courseId]);
 
   // 별점 선택 컴포넌트
-  const StarRating = ({ rating, onRatingChange, size = 24, interactive = true }) => {
+  const StarRating = ({
+    rating,
+    onRatingChange,
+    size = 24,
+    interactive = true,
+  }) => {
     return (
       <View style={styles.starContainer}>
         {[1, 2, 3, 4, 5].map((star) => (
           <TouchableOpacity
             key={star}
-            onPress={() => interactive && onRatingChange && onRatingChange(star)}
+            onPress={() =>
+              interactive && onRatingChange && onRatingChange(star)
+            }
             disabled={!interactive}
           >
             <Ionicons
@@ -120,8 +125,8 @@ export default function RunningCourseDetail({ route, navigation }) {
       setSubmittingReview(true);
       await addCourseReview({
         courseId,
-        userId: "currentUser", // TODO: 실제 유저 ID로 교체
-        userName: "사용자", // TODO: 실제 유저 이름으로 교체
+        userId: "currentUser",
+        userName: "사용자",
         rating: newReview.rating,
         comment: newReview.comment,
       });
@@ -130,7 +135,7 @@ export default function RunningCourseDetail({ route, navigation }) {
       setReviewModalVisible(false);
       setNewReview({ rating: 0, comment: "" });
       loadReviews();
-      loadCourseDetail(); // 평균 별점 업데이트를 위해
+      loadCourseDetail();
     } catch (error) {
       console.error("Error submitting review:", error);
       Alert.alert("오류", "리뷰 등록에 실패했습니다.");
@@ -233,23 +238,22 @@ export default function RunningCourseDetail({ route, navigation }) {
 
   return (
     <View style={{ flex: 1 }}>
+      <LinearGradient
+        colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
+        locations={[0, 0.16, 1]}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+      />
 
-      
-    <LinearGradient
-          colors={["#B8E6F0", "#C8EDD4", "#D4E9D7"]}
-          locations={[0, 0.16, 1]}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-        />
-
-   
-    <SafeAreaView style={[styles.container, { backgroundColor: "transparent" }]}>
-      <StatusBar barStyle="dark-content" />
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: "transparent" }]}
+      >
+        <StatusBar barStyle="dark-content" />
 
         {/* 헤더 */}
         <View style={styles.header}>
@@ -405,7 +409,11 @@ export default function RunningCourseDetail({ route, navigation }) {
                 {course.reviewCount > 0 && (
                   <View style={styles.averageRatingContainer}>
                     <View style={styles.averageRatingStars}>
-                      <StarRating rating={Math.round(course.averageRating || 0)} interactive={false} size={20} />
+                      <StarRating
+                        rating={Math.round(course.averageRating || 0)}
+                        interactive={false}
+                        size={20}
+                      />
                     </View>
                     <Text style={styles.averageRatingText}>
                       {(course.averageRating || 0).toFixed(1)}
@@ -419,7 +427,11 @@ export default function RunningCourseDetail({ route, navigation }) {
                 {/* 리뷰 목록 */}
                 {reviews.length === 0 ? (
                   <View style={styles.emptyReviewContainer}>
-                    <Ionicons name="chatbubble-outline" size={40} color="#ccc" />
+                    <Ionicons
+                      name="chatbubble-outline"
+                      size={40}
+                      color="#ccc"
+                    />
                     <Text style={styles.emptyReviewText}>
                       아직 리뷰가 없습니다.{"\n"}첫 번째 리뷰를 작성해보세요!
                     </Text>
@@ -432,7 +444,9 @@ export default function RunningCourseDetail({ route, navigation }) {
                           <View style={styles.reviewAvatar}>
                             <Ionicons name="person" size={16} color="#fff" />
                           </View>
-                          <Text style={styles.reviewUserName}>{review.userName}</Text>
+                          <Text style={styles.reviewUserName}>
+                            {review.userName}
+                          </Text>
                         </View>
                         {/* 본인 리뷰만 삭제 가능 */}
                         {review.userId === CURRENT_USER_ID && (
@@ -440,14 +454,24 @@ export default function RunningCourseDetail({ route, navigation }) {
                             onPress={() => handleDeleteReview(review.id)}
                             style={styles.deleteReviewButton}
                           >
-                            <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
+                            <Ionicons
+                              name="trash-outline"
+                              size={18}
+                              color="#FF6B6B"
+                            />
                           </TouchableOpacity>
                         )}
                       </View>
                       <View style={styles.reviewRating}>
-                        <StarRating rating={review.rating} interactive={false} size={16} />
+                        <StarRating
+                          rating={review.rating}
+                          interactive={false}
+                          size={16}
+                        />
                         <Text style={styles.reviewDate}>
-                          {new Date(review.createdAt).toLocaleDateString("ko-KR")}
+                          {new Date(review.createdAt).toLocaleDateString(
+                            "ko-KR"
+                          )}
                         </Text>
                       </View>
                       <Text style={styles.reviewComment}>{review.comment}</Text>
@@ -578,7 +602,9 @@ export default function RunningCourseDetail({ route, navigation }) {
                 <View style={styles.modalContent}>
                   <View style={styles.modalHeader}>
                     <Text style={styles.modalTitle}>리뷰 작성</Text>
-                    <TouchableOpacity onPress={() => setReviewModalVisible(false)}>
+                    <TouchableOpacity
+                      onPress={() => setReviewModalVisible(false)}
+                    >
                       <Ionicons name="close" size={28} color="#333" />
                     </TouchableOpacity>
                   </View>
@@ -595,7 +621,9 @@ export default function RunningCourseDetail({ route, navigation }) {
                         interactive={true}
                       />
                       <Text style={styles.ratingText}>
-                        {newReview.rating > 0 ? `${newReview.rating}점` : "별점을 선택하세요"}
+                        {newReview.rating > 0
+                          ? `${newReview.rating}점`
+                          : "별점을 선택하세요"}
                       </Text>
                     </View>
                   </View>
